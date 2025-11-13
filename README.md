@@ -2,6 +2,48 @@
 
 Build the same social media application twice - first as a Flask monolithic app, then as a REST API + JavaScript frontend - to understand architectural trade-offs.
 
+## 📋 Project Overview
+
+This project teaches web architecture by having you build the same app two different ways:
+
+### Two Phases, Two Architectures
+
+**Phase 1: Monolithic Flask App** (~2 hours)
+- Single Python application with server-side rendering
+- User authentication, posts, profiles, and one additional feature of your choice
+- Code goes in `phase1/` directory
+- Database stored in `shared/database/app.db`
+
+**Phase 2: REST API + JavaScript Frontend** (~2-2.5 hours)
+- Separated architecture: FastAPI backend + React/Vue frontend
+- JWT authentication, REST API design
+- Focus on 3-4 core features (not full feature parity with Phase 1)
+- Backend code in `phase2/backend/`, frontend in `phase2/frontend/`
+- Can reuse the same database from Phase 1!
+
+### Why This Structure?
+
+**`shared/` directory** - Resources used by both phases:
+- `shared/database/app.db` - SQLite database (you can reuse Phase 1 data in Phase 2!)
+- `shared/static/style.css` - Stylesheet used by both phases
+- `shared/invites.txt` - Invite list (if using text-based invites)
+
+**Documentation files** (at repository root):
+- `TODO-phase1.md` / `TODO-phase2.md` - Step-by-step guides for Claude
+- `ARCHITECTURE-GUIDE-phase1.md` / `ARCHITECTURE-GUIDE-phase2.md` - Explain concepts
+- `SETUP-AUTHENTICATION.md` - Authentication setup details
+- `phase1/DECISIONS-MADE-phase1.md` / `phase2/DECISIONS-MADE-phase2.md` - Your architectural choices (updated by Claude as you make decisions)
+- `ARCHITECTURE.md` - Technical documentation (maintained by Claude as you build)
+- `REFLECTIONS.md` - Your reflection on what you learned (you fill this out at the end)
+
+### The Learning Goal
+
+By building the same features twice with different architectures, you'll understand:
+- **Trade-offs** between monolithic and separated architectures
+- **When to use** each approach
+- **How** authentication, data flow, and rendering differ
+- **Why** architectural decisions matter
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -227,16 +269,35 @@ Claude asks you about these and implements based on your choices.
 
 ---
 
-## Documentation Requirements
+## Documentation
 
-As you work, you'll fill out `ARCHITECTURE.md` with:
-1. Database schema documentation
-2. REST API endpoint design (Phase 2)
-3. Authentication flow explanation
-4. Testing strategy
-5. Security considerations
-6. Phase 1 vs Phase 2 comparison
-7. AI tool usage reflection
+Your project includes several documentation files with different purposes:
+
+### Documents Claude Updates For You
+
+**`phase1/DECISIONS-MADE-phase1.md`** and **`phase2/DECISIONS-MADE-phase2.md`:**
+- Record your architectural choices as you make them
+- Updated by Claude during the decision-making process
+- Useful if you start a new Claude conversation (provides context)
+
+**`ARCHITECTURE.md`:**
+- Technical reference documenting what you built
+- Updated by Claude as you implement features
+- Documents database schema, API endpoints, features implemented
+- Think of it as your project's technical specification
+
+### Document You Write
+
+**`REFLECTIONS.md`** (Template provided - your main deliverable):
+- Your reflection on what you learned
+- Comparison of Phase 1 vs Phase 2 from your perspective
+- What worked well, what was challenging
+- Lessons learned using AI tools
+- Self-assessment
+
+**When to write it:** After completing both phases, before final submission
+
+This separation means you focus on learning and building, while Claude handles the technical documentation. Your reflection is where you demonstrate understanding!
 
 ---
 

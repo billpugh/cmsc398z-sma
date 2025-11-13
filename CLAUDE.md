@@ -22,7 +22,8 @@ The project emphasizes understanding architectural patterns, REST API design, an
 ├── ARCHITECTURE-GUIDE-phase1.md         # Phase 1 concepts (WHY/WHAT)
 ├── ARCHITECTURE-GUIDE-phase2.md         # Phase 2 concepts (WHY/WHAT)
 ├── SETUP-AUTHENTICATION.md              # Authentication setup (both phases)
-├── ARCHITECTURE.md                      # Template for student documentation
+├── ARCHITECTURE.md                      # Technical documentation (Claude maintains)
+├── REFLECTIONS.md                       # Student reflection (student writes at end)
 ├── deployment-guide.md                  # Deployment instructions
 │
 ├── shared/                              # Shared resources between phases
@@ -153,12 +154,20 @@ Students must implement at least ONE additional feature, articulating the design
 4. Claude guides through backend and frontend implementation
 5. Student can reference `phase1/` code and reuse `shared/database/app.db`
 
-**DECISIONS-MADE files**:
-- Template files pre-exist in `phase1/DECISIONS-MADE-phase1.md` and `phase2/DECISIONS-MADE-phase2.md`
-- Updated by Claude in Part 1 as student makes each decision
-- Documents student's architectural choices with reasoning
-- Useful if student starts a new Claude conversation (provides context)
-- Submitted as part of assignment
+**Documentation files**:
+- **DECISIONS-MADE files** (`phase1/DECISIONS-MADE-phase1.md` and `phase2/DECISIONS-MADE-phase2.md`):
+  - Updated by Claude as student makes each decision
+  - Documents student's architectural choices with reasoning
+  - Useful if student starts a new Claude conversation (provides context)
+- **ARCHITECTURE.md** (root directory):
+  - Technical reference maintained by Claude as features are implemented
+  - Documents actual database schema, API endpoints, routes, features built
+  - Think of it as the technical specification of what was actually built
+- **REFLECTIONS.md** (root directory):
+  - Student-written reflection filled out after both phases complete
+  - Compares Phase 1 vs Phase 2 from student's perspective
+  - Lessons learned, what worked well/poorly with AI tools
+  - Main deliverable for demonstrating understanding
 
 ## Python Dependency Management with `uv`
 
@@ -878,42 +887,69 @@ Both phases should be deployed to **PythonAnywhere** (or alternative platforms):
 - Update environment variables for production
 - Update CORS settings for production domains
 
-## Documentation Requirements
+## Documentation Structure
 
-Students must create/complete these documentation files:
+This project uses three types of documentation with different purposes:
 
-**`phase1/DECISIONS-MADE-phase1.md`** (updated throughout Phase 1):
+### 1. DECISIONS-MADE Files (Claude maintains during decisions)
+
+**`phase1/DECISIONS-MADE-phase1.md`** - Updated by Claude as student makes choices:
 - **Part 1**: Visual design choices (app name, color scheme)
+- **Part 3**: Minimal features architecture (objects/actions/views)
 - **Part 5**: Additional feature choice and design
 - **Part 5 (if Real Authentication chosen)**: Invite system and access control decisions
-- **Throughout**: Any additional architectural decisions made during implementation
-- Template file pre-exists, Claude updates as student makes decisions
-- Note: Invite/access control decisions only made if student adds real authentication
+- **Throughout**: Any architectural decisions made during implementation
 
-**`phase2/DECISIONS-MADE-phase2.md`** (updated in Phase 2, Part 1):
+**`phase2/DECISIONS-MADE-phase2.md`** - Updated by Claude in Phase 2 Part 1:
 - Frontend framework choice and reasoning
 - Authentication method choice and reasoning
 - Database strategy (reuse vs new) and reasoning
 - Core features selected (3-4) and reasoning
 - Access control model and reasoning
-- Any additional architectural decisions made during implementation
-- Template file pre-exists, Claude updates as student makes decisions
 
-**`ARCHITECTURE.md`** (completed throughout both phases):
-1. Database schema documentation
-2. REST API endpoint design (Phase 2)
-3. Authentication flow explanation
-4. Testing strategy (design even if not implemented)
-5. Security considerations
-6. Monitoring approach (design even if not implemented)
-7. Phase 1 vs Phase 2 comparison
-8. AI tool usage reflection
+**Purpose**: Provides context if student starts a new Claude conversation. You should reference these when resuming work.
 
-**Purpose of DECISIONS-MADE files**:
-- Provides context if student starts a new Claude conversation
-- Reference for student during implementation
-- Submitted as part of assignment
-- Demonstrates understanding of architectural trade-offs
+### 2. ARCHITECTURE.md (Claude maintains during implementation)
+
+**Location**: Root directory
+
+**Updated by**: Claude, as features are implemented
+
+**Contains**:
+- What was actually built (not aspirational)
+- Database schema (actual table definitions)
+- Routes/API endpoints implemented
+- Features completed
+- Authentication & access control implementation details
+- Security measures actually in place (and known limitations)
+- Testing approach actually used
+- Deployment configuration (if deployed)
+- Technical decisions summary (references DECISIONS-MADE files for rationale)
+
+**Purpose**: Technical reference document showing what the project actually contains. Think of it as the project's technical specification.
+
+**Important**: Do NOT duplicate content from DECISIONS-MADE files. Reference them instead. Focus on documenting the actual implementation.
+
+### 3. REFLECTIONS.md (Student writes at the end)
+
+**Location**: Root directory
+
+**Written by**: Student (after completing both phases)
+
+**Contains**:
+- Phase 1 experience (what went well, what was challenging)
+- Phase 2 experience (what went well, what was challenging)
+- Comparison of the two architectures from student's perspective
+- What they preferred and why
+- When to use each architecture
+- Working with AI tools (what worked, what didn't, prompting strategies)
+- Technical growth and learning
+- Self-assessment
+- Overall reflection
+
+**Purpose**: Main deliverable demonstrating student's understanding of architectural trade-offs and reflection on the learning process.
+
+**Important**: This is the student's voice, not Claude's. Claude should NOT write this file.
 
 ## Timeline
 
@@ -944,10 +980,18 @@ When helping students:
    - **Stop at every 🛑 marker** and wait for student response
    - Don't generate code until student indicates understanding
    - This is a **teaching conversation**, not just code generation
-4. **Update DECISIONS-MADE files** throughout:
-   - Files already exist: `phase1/DECISIONS-MADE-phase1.md` and `phase2/DECISIONS-MADE-phase2.md`
-   - Update each section as student makes decisions or completes design work
-   - Document their reasoning and understanding
+4. **Update documentation as you work**:
+   - **DECISIONS-MADE files** (`phase1/DECISIONS-MADE-phase1.md`, `phase2/DECISIONS-MADE-phase2.md`):
+     - Update as student makes each decision
+     - Document their reasoning and choices
+   - **ARCHITECTURE.md** (root):
+     - Update after implementing each major feature
+     - Document actual database schema after models are created
+     - Document routes/endpoints after they're implemented
+     - Keep it factual - what was actually built, not plans
+   - **REFLECTIONS.md** (root):
+     - Do NOT write this file - student writes it at the end
+     - Remind student to fill it out after completing both phases
 5. **Check understanding at key points**:
    - Phase 1: Student reviews Post model, create post route, homepage template
    - Ask student to explain concepts in their own words
