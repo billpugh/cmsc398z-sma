@@ -89,14 +89,14 @@ uv sync
    DATABASE_URL=sqlite:////home/yourusername/your-repo/phase1/instance/app.db
 
    # Google OAuth (if using)
-   GOOGLE_CLIENT_ID=your-client-id
-   GOOGLE_CLIENT_SECRET=your-client-secret
+   GOOGLE_CLIENT_ID=<your-google-client-id>
+   GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 
    # Email (if using)
    MAIL_SERVER=smtp.gmail.com
    MAIL_PORT=587
    MAIL_USERNAME=your-email@gmail.com
-   MAIL_PASSWORD=your-app-password
+   MAIL_PASSWORD=<your-16-char-app-password-here>
    ```
 
 3. Save and exit (Ctrl+O, Enter, Ctrl+X)

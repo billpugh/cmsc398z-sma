@@ -1,0 +1,26 @@
+# GitGuardian configuration file
+# This tells GitGuardian to ignore example credentials in documentation files
+
+version: 2
+
+# Paths to exclude from secret scanning
+paths-ignore:
+  - "**/*.md"           # All markdown documentation files
+  - "**/.env.example"   # Example environment files
+  - "**/deployment-guide.md"
+  - "**/SETUP-AUTHENTICATION.md"
+  - "phase1/.env.example"
+  - "phase2/backend/.env.example"
+
+# Patterns to ignore (matches will not trigger alerts)
+matches-ignore:
+  - name: Example placeholders in documentation
+    match: "<your-.*?>"
+  - name: Generic placeholder values
+    match: "your-(client-id|client-secret|api-key|password|email)"
+  - name: Example SMTP passwords
+    match: "abcdefghijklmnop"
+  - name: Example Google OAuth secrets
+    match: "GOCSPX-abc123xyz789"
+  - name: Example SendGrid API keys
+    match: "SG\\.your-api-key-here"

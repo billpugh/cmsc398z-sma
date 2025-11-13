@@ -577,8 +577,8 @@ SECRET_KEY=<your-generated-secret-key>
 DATABASE_URL=sqlite:///instance/app.db
 
 # Google OAuth
-GOOGLE_CLIENT_ID=123456789-abc123.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-abc123xyz789
+GOOGLE_CLIENT_ID=<your-google-client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 ```
 
 **Update `pyproject.toml`:**
@@ -810,7 +810,7 @@ class User(db.Model, UserMixin):
    MAIL_PORT=587
    MAIL_USE_TLS=True
    MAIL_USERNAME=your-email@gmail.com
-   MAIL_PASSWORD=abcdefghijklmnop
+   MAIL_PASSWORD=<your-16-char-app-password-here>
    MAIL_DEFAULT_SENDER=your-email@gmail.com
    ```
 
@@ -852,7 +852,7 @@ class User(db.Model, UserMixin):
 
 5. **Update `.env`:**
    ```env
-   SENDGRID_API_KEY=SG.your-api-key-here
+   SENDGRID_API_KEY=<your-sendgrid-api-key-here>
    MAIL_DEFAULT_SENDER=your-verified-email@gmail.com
    ```
 
@@ -881,7 +881,7 @@ class User(db.Model, UserMixin):
    MAIL_PORT=587
    MAIL_USE_TLS=True
    MAIL_USERNAME=postmaster@your-sandbox-domain.mailgun.org
-   MAIL_PASSWORD=your-mailgun-password
+   MAIL_PASSWORD=<your-mailgun-password-here>
    ```
 
 ### Implementation
@@ -1138,12 +1138,12 @@ def dev_login():
 
 ```env
 # Add (for Google OAuth):
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=<your-client-id>
+GOOGLE_CLIENT_SECRET=<your-client-secret>
 
 # OR (for Email Magic Links):
-MAIL_USERNAME=...
-MAIL_PASSWORD=...
+MAIL_USERNAME=<your-email>
+MAIL_PASSWORD=<your-password>
 ```
 
 ### Migration Checklist
