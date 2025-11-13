@@ -251,7 +251,7 @@ shared/
 
 **Next step**: Tell Claude to guide you through the implementation:
 
-> **"Read TODO-phase1.md and guide me through Phase 1. Follow the conversational scripts."**
+> **Start Claude in the top level directory for the project, so it has access to all of the files in the project. Tell it to "Read TODO-phase1.md and guide me through Phase 1. Follow the conversational scripts."**
 
 Claude will lead you through a structured conversation where you'll:
 1. Make quick design decisions (app name, colors)
