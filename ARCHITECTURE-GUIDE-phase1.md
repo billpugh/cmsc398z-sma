@@ -9,10 +9,13 @@ Build a fully functional social media prototype using Flask with server-side ren
 ## How to Use This Guide
 
 1. **Read this README** - Understand the architecture and design decisions (15 minutes)
-2. **Work through `TODO-phase1.md`** - Step-by-step implementation guide with Claude
-3. **Reference `../SETUP-AUTHENTICATION.md`** - Detailed authentication setup when needed
+2. **Tell Claude to guide you through Phase 1** - Say: "Read TODO-phase1.md and guide me through Phase 1"
+   - **Important**: `TODO-phase1.md` is a guide for Claude, not for you to read directly
+   - Claude will follow it to lead you through a structured conversation
+   - You'll make decisions, learn concepts, and implement features step-by-step
+3. **Reference `../SETUP-AUTHENTICATION.md`** - Detailed authentication setup (if adding real auth as optional feature)
 
-This README explains **WHY** and **WHAT**. The TODO.md guides **HOW** with AI assistance.
+This README explains **WHY** and **WHAT**. Claude uses TODO.md to guide **HOW**.
 
 ---
 
@@ -49,236 +52,95 @@ Browser Request → Flask App → Database
 
 ---
 
-## Key Architectural Decisions
+## Core Features (Minimal Viable Product)
 
-### Decision 1: Authentication Method
+You'll start by implementing these minimal features to get a working app quickly:
 
-You'll choose ONE of three authentication approaches. This is a learning opportunity to understand trade-offs:
+### 1. Simple User Login (Dev Mode)
+- Basic session-based user switching (pick from a list of users)
+- No password, OAuth, or email required initially
+- Focus on learning core features first
+- Can upgrade to real authentication later as an optional feature
 
-#### Option A: Development Mode (No Real Auth)
-**Time**: 5 minutes | **Complexity**: Very Low
-
-- Simple session-based user switching
-- No password, OAuth, or email required
-- Perfect for learning features first
-
-**When to use**: First web app, want to focus on features, local development only
-
-**Trade-off**: NOT suitable for public deployment
-
-**Migration path**: Easy to upgrade to real auth later (same database schema)
-
----
-
-#### Option B: Google OAuth (Recommended for Portfolio)
-**Time**: 15-20 minutes | **Complexity**: Medium
-
-- Users log in with existing Google accounts
-- No password management or storage needed
-- Production-ready authentication
-
-**When to use**: Want to deploy publicly, building portfolio project
-
-**Requires**: Google Cloud Console project setup (guided in SETUP-AUTHENTICATION.md)
-
-**What you learn**: OAuth 2.0 flow, third-party authentication, redirect URIs
-
----
-
-#### Option C: Email Magic Links (Advanced)
-**Time**: 30-45 minutes | **Complexity**: High
-
-- Passwordless authentication (like Slack, Medium)
-- Send login link via email
-- Tokens expire after 15 minutes
-
-**When to use**: Want to learn email infrastructure, avoid Google dependency
-
-**Requires**: Email service (Gmail App Password or SendGrid)
-
-**What you learn**: Email sending, secure tokens, transactional email services, time-based expiration
-
----
-
-### Decision 2: Access Control Model
-
-This affects who can view your deployed app:
-
-#### Option A: Fully Private
-**All routes require login** - Simpler implementation
-
-- Only invited users can create accounts
-- Only logged-in users can see anything
-- Uniform `@login_required` on all routes
-
-**Implementation**:
-```python
-@app.route('/')
-@login_required  # Must login to see feed
-def index():
-    posts = get_personalized_feed(current_user)
-    return render_template('feed.html', posts=posts)
-```
-
-**When to use**: Private community, internal tool, prefer simpler permissions
-
----
-
-#### Option B: Public Reading, Private Writing (Recommended)
-**Anyone can view, login required to interact**
-
-- Anyone can browse posts and profiles (read-only)
-- Must login to create posts, follow users, etc.
-- Invite-only for posting prevents spam
-
-**Implementation**:
-```python
-@app.route('/')
-# NO @login_required - public reading
-def index():
-    posts = Post.query.order_by(Post.created_at.desc()).limit(50).all()
-    return render_template('feed.html', posts=posts)
-
-@app.route('/posts', methods=['POST'])
-@login_required  # MUST login to create
-def create_post():
-    # Only authenticated users can post
-    ...
-```
-
-**When to use**: Portfolio project (shareable link!), want to showcase work publicly
-
-**Real-world examples**: Twitter allows public reading, Medium, DEV.to, GitHub
-
-**What you learn**: Granular access control (read vs. write permissions)
-
----
-
-### Decision 3: Invite System
-
-Prevents random strangers from creating accounts and posting content.
-
-#### Option A: invites.txt file (Simpler)
-- Simple text file with allowed emails
-- One email per line
-- Easy to manage
-
-#### Option B: Database table (More Features)
-- Track who invited whom
-- Track when invite was used
-- Can build "invite friends" feature later
-- More complex queries
-
----
-
-## Understanding the Data Model
-
-### Core Entities
-
-**User** - Represents a person using the app
-- Stores identity (email, username)
-- Display name for presentation
-- Created timestamp
-
-**Post** - A single message/status update
-- References the User who created it (foreign key)
-- Content (limited to 280 characters)
-- Timestamp for sorting
-
-**Follow** - Relationship between two users
-- follower_id → User who is following
-- followee_id → User being followed
-- Prevents duplicates with unique constraint
-
-**Invite** (optional) - Controls who can register
-- Email address of invited person
-- Who invited them
-- Whether they've registered yet
-
-### Database Relationships
-
-```
-User
-  ├─→ Posts (one-to-many): user.posts
-  ├─→ Followers (many-to-many through Follow)
-  └─→ Following (many-to-many through Follow)
-
-Post
-  └─→ User (many-to-one): post.user
-
-Follow
-  ├─→ Follower User (many-to-one)
-  └─→ Followee User (many-to-one)
-```
-
-**Why this matters**: Understanding relationships helps you write efficient queries and avoid N+1 problems.
-
----
-
-## Core Features (MVP)
-
-### 1. User Authentication & Access Control
-- Users can log in/log out
-- Sessions persist across requests
-- Protected routes enforce authentication
-- Invite system controls registration
-
-**What you learn**: Session management, cookies, authentication state, access control patterns
+**What you learn**: Session management, Flask routing, basic authentication concepts
 
 ---
 
 ### 2. Post Creation & Display
 - Users can create short text posts (280 chars max)
 - Posts include timestamp and author
-- Posts display on feed and profiles
+- Posts display on global feed and user profiles
 - Validation prevents empty/too-long posts
 
 **What you learn**: Forms, POST requests, validation, database writes, flash messages
 
 ---
 
-### 3. User Profiles
+### 3. Global Feed
+- Homepage shows recent posts from all users
+- Sorted by timestamp (newest first)
+- Limited to reasonable number (50 posts)
+- Anyone can browse (no login required for viewing)
+
+**What you learn**: Database queries, sorting, template rendering
+
+---
+
+### 4. User Profiles
 - View any user's profile page
 - See username, join date, post count
 - List all posts by that user
-- Shows follower/following counts
 
 **What you learn**: URL parameters, database queries, template rendering, user data aggregation
 
 ---
 
-### 4. Following System
-- Follow/unfollow other users
-- See who you're following
-- See who follows you
-- Can't follow yourself
-- Duplicate follows handled gracefully
+## Understanding the Data Model
 
-**What you learn**: Many-to-many relationships, state management, button toggling, preventing duplicates
+### Core Entities (Minimal Features)
+
+**User** - Represents a person using the app
+- `id` (primary key)
+- `username` (unique)
+- `display_name`
+- `created_at`
+
+**Post** - A single message/status update
+- `id` (primary key)
+- `user_id` (foreign key → users.id)
+- `content` (text, max 280 characters)
+- `created_at`
+
+### Database Relationships (Minimal)
+
+```
+User
+  └─→ Posts (one-to-many): user.posts
+
+Post
+  └─→ User (many-to-one): post.user
+```
+
+**Why this matters**: Understanding relationships helps you write efficient queries and avoid N+1 problems.
 
 ---
 
-### 5. Personalized Feed
-- Homepage shows relevant posts:
-  - **Fully Private**: Your posts + posts from followed users
-  - **Public Reading**: Recent posts from all users
-- Sorted by timestamp (newest first)
-- Limited to reasonable number (50)
+## Optional Extensions (Choose at least ONE)
 
-**What you learn**: Complex queries with JOIN, filtering, sorting, pagination concepts
+After implementing the minimal features, you must choose at least ONE additional feature to implement. Here are some options:
 
----
-
-## Optional Extensions (If Time Permits)
-
-- 📷 **Image Uploads** - Posts with photos (file handling, validation)
-- ❤️ **Likes** - Like/unlike posts (additional many-to-many relationship)
-- 💬 **Comments** - Nested content (tree structures)
-- 🔍 **Search** - Find users/posts (full-text search, SQL LIKE)
+- 🔐 **Real Authentication** - Replace dev mode with Google OAuth or email magic links (see `SETUP-AUTHENTICATION.md`)
+- 👥 **Following System** - Follow/unfollow users, personalized feed showing only posts from followed users
+- ❤️ **Likes** - Like/unlike posts, show like counts
+- 📷 **Image Uploads** - Attach images to posts (file handling, validation)
+- 💬 **Comments** - Add comments to posts (nested content)
+- 🔍 **Search** - Find users or posts by keyword (full-text search)
+- 👤 **Profile Editing** - Edit display name, add bio and avatar
 - 🎨 **Better UI** - Polish with CSS frameworks (responsive design)
 - 🧪 **Tests** - pytest for routes (testing patterns)
+- 💡 **Your idea** - Any other feature you propose
 
-**Note**: These are truly optional! Focus on understanding core features first.
+**Note**: When you choose a feature in Part 5 of the implementation, Claude will explain what it involves (complexity, setup requirements, time estimate) before you commit. You'll then describe the architecture (objects, actions, views) before Claude implements it.
 
 ---
 
@@ -297,28 +159,20 @@ Follow
 ### SQLAlchemy (ORM)
 - Object-Relational Mapping - Write Python instead of SQL
 - Automatic relationship handling
-- Migration support (though not used in this project)
+- Prevents SQL injection
+- Type-safe queries
 
-**Why ORM**: Type-safe, prevents SQL injection, more maintainable
+**Why ORM**: More maintainable, safer than raw SQL, better for prototyping
 
 ---
 
 ### SQLite
 - File-based database (no setup required)
-- Single `.db` file in `instance/` directory
+- Single `.db` file in `shared/database/` directory
 - Great for prototyping and learning
+- Shared between Phase 1 and Phase 2
 
 **Limitation**: Not ideal for production at scale (concurrent writes), but perfect for class projects
-
----
-
-### Flask-Login
-- Session management for authenticated users
-- `current_user` proxy for logged-in user
-- `@login_required` decorator
-- Remembers users across requests
-
-**How it works**: Stores user ID in signed cookie, loads User object on each request
 
 ---
 
@@ -332,55 +186,95 @@ Follow
 
 **Pattern**: Controller (Flask route) → Model (database query) → View (Jinja2 template)
 
----
-
-## Security Considerations
-
-Even as a prototype, avoid basic security issues:
-
-### SECRET_KEY
-**Most important!** Used to sign session cookies and tokens.
-
-- ❌ NEVER use: "change-this-secret-key", "mysecretkey123", any memorizable value
-- ✅ Generate: `python -c "import secrets; print(secrets.token_hex(32))"`
-- ✅ Store in `.env` file (never commit to git)
-- ✅ Minimum 64 hex characters (32 bytes)
-
-**If compromised**: Attackers can impersonate any user!
+This is the classic **MVC (Model-View-Controller)** pattern!
 
 ---
 
-### SQL Injection Prevention
-- ✅ Always use SQLAlchemy ORM
-- ❌ Never concatenate user input into SQL strings
-- ❌ Never use `db.session.execute(f"SELECT * FROM users WHERE username = '{username}'")`
-- ✅ Use `User.query.filter_by(username=username).first()`
+### Flask Sessions
+- HTTP is stateless - server doesn't remember who you are between requests
+- **Sessions** solve this by storing data (like user ID) across requests
+- Flask stores session data in a signed cookie on the user's browser
+- **SECRET_KEY** is used to sign the cookie so users can't tamper with it
+
+**How it works**:
+1. User logs in (dev mode or real auth)
+2. Server stores `user_id` in session: `session['user_id'] = user.id`
+3. Browser sends session cookie with every request
+4. Server reads user_id from session: `user_id = session.get('user_id')`
+5. Server can load that User from the database
+
+**Both dev mode and real authentication use sessions!** The difference is just HOW users prove their identity initially (pick from list vs OAuth/email).
 
 ---
 
-### XSS Prevention
-- ✅ Jinja2 auto-escapes HTML by default (good!)
-- ❌ Don't use `|safe` filter on user-generated content
-- ✅ User input displayed as text, not executed as HTML/JS
+## Project Structure
+
+```
+phase1/
+├── app.py                 # Main Flask application entry point
+├── database.py            # Flask app and db initialization
+├── models.py              # Database models (User, Post)
+├── routes.py              # Route handlers (views)
+├── auth.py                # Authentication logic (if using real auth)
+├── .env                   # Environment variables (SECRET_KEY, etc.)
+├── dev_scripts/           # Helper scripts for database setup
+│   ├── init_database.py
+│   └── create_test_data.py
+├── static/
+│   ├── css/
+│   │   └── style.css     # Custom styling (optional)
+│   └── uploads/          # User-uploaded images (if implemented)
+└── templates/
+    ├── base.html         # Base template (navigation, structure)
+    ├── login.html        # Login page (dev mode or real auth)
+    ├── index.html        # Homepage/global feed
+    └── profile.html      # User profile
+
+shared/
+├── database/
+│   └── app.db            # SQLite database (shared with Phase 2)
+├── static/
+│   └── style.css         # Shared stylesheet
+└── invites.txt           # Allowed emails (if using real auth with file-based invites)
+```
 
 ---
 
-### File Upload Security (if implementing)
-- ✅ Validate file extensions (whitelist, not blacklist)
-- ✅ Limit file sizes (use Flask's `MAX_CONTENT_LENGTH`)
-- ✅ Sanitize filenames (use `werkzeug.utils.secure_filename`)
-- ❌ Don't trust user-supplied filenames directly
+## Time to Start Writing Code!
 
----
+**You're now ready to begin implementation.** You've learned:
+- What a monolithic architecture is and why it's good for prototyping
+- The minimal features you'll build (login, posts, feed, profiles)
+- The optional features you can add (and you'll choose one later)
+- The technology stack (Flask, SQLAlchemy, SQLite, Jinja2, sessions)
+- How your files will be organized
 
-### Environment Variables
-- ✅ `.env` in `.gitignore`
-- ❌ Never commit credentials to git
-- ✅ Use `.env.example` as template (with placeholder values)
+**Next step**: Tell Claude to guide you through the implementation:
+
+> **"Read TODO-phase1.md and guide me through Phase 1. Follow the conversational scripts."**
+
+Claude will lead you through a structured conversation where you'll:
+1. Make quick design decisions (app name, colors)
+2. Set up your environment
+3. Learn the objects/actions/views framework
+4. Implement minimal features step-by-step
+5. Choose and design an additional feature (you'll describe it before Claude codes it!)
+6. Get a code review and learn best practices
+7. Optionally add more features if time permits
+
+**The rest of this document is reference material** - come back to it when you want to understand:
+- Common patterns (flash messages, redirects, etc.)
+- Security concepts (why they matter)
+- Troubleshooting common issues
+- Architectural trade-offs
+
+**Don't try to memorize everything now** - you'll learn by doing with Claude's guidance!
 
 ---
 
 ## Common Patterns and Concepts
+
+**Note**: This section is reference material. You'll encounter these patterns during implementation - refer back here when you want deeper understanding.
 
 ### Flash Messages
 Temporary messages shown after actions (form submissions, errors):
@@ -410,7 +304,7 @@ flash('Error: Post is too long', 'error')
 @app.route('/posts', methods=['POST'])
 def create_post():
     # Process form data
-    post = Post(content=request.form['content'])
+    post = Post(content=request.form['content'], user_id=current_user_id)
     db.session.add(post)
     db.session.commit()
 
@@ -418,7 +312,7 @@ def create_post():
     return redirect(url_for('index'))
 ```
 
-**Why**: Prevents form resubmission when user refreshes page
+**Why**: Prevents form resubmission when user refreshes page (Post-Redirect-Get pattern)
 
 ---
 
@@ -436,6 +330,8 @@ db.session.commit()
 # Undo changes if error occurs
 db.session.rollback()
 ```
+
+**Important**: Always commit after making changes, or they'll be lost!
 
 ---
 
@@ -461,91 +357,104 @@ Avoid repeating HTML structure:
 {% endblock %}
 ```
 
----
-
-## Working Effectively with AI
-
-### Good Prompting Practices
-
-**✅ Be specific about context:**
-```
-I'm building a Flask app with Google OAuth authentication.
-Add a feature where users can like posts.
-Update the database model, create the route, and update the template.
-```
-
-**✅ Include error messages:**
-```
-I'm getting "NoneType has no attribute 'id'" when creating a post.
-Here's my route: [paste code]
-What's wrong?
-```
-
-**✅ Ask for explanations:**
-```
-Explain how the Follow model's unique constraint prevents duplicate follows.
-```
-
-**❌ Too vague:**
-```
-Make a social media app
-Add authentication
-Fix the bug
-```
+**Benefit**: Change navigation once in `base.html`, affects all pages
 
 ---
 
-### Iterative Development
-1. **One feature at a time** - Don't try to build everything at once
-2. **Test frequently** - After each feature, verify it works
-3. **Ask AI to explain** - Don't just copy code, understand it
-4. **Debug with AI** - Paste errors and relevant code
-5. **Iterate** - First version doesn't need to be perfect
+### Declarative Checking of Authentication
+
+Your app needs to check if users are logged in and protect certain routes (like creating posts). You'll implement this in two stages:
+
+#### Initial Implementation: Manual Session Checks
+```python
+@app.route('/posts', methods=['POST'])
+def create_post():
+    if 'user_id' not in session:
+        return redirect(url_for('dev_login'))
+
+    user_id = session['user_id']
+    # ... create post
+```
+
+**Characteristics**:
+- Simple and explicit - you can see exactly what's happening
+- Must repeat the check in every protected route
+- Easy to understand for learning
+
+#### Refactored Implementation: Decorators (Introduced in Code Review)
+```python
+from flask_login import login_required, current_user
+
+@app.route('/posts', methods=['POST'])
+@login_required
+def create_post():
+    user_id = current_user.id
+    # ... create post
+```
+
+**Characteristics**:
+- "Declarative" - the `@login_required` decorator declares this route's requirement
+- Less repetition - the check is in one place
+- Easier to see at a glance which routes require authentication
+- Follows Flask conventions and best practices
+
+**Your journey**: You'll start with manual checks (understand the mechanics), then during code review, Claude will introduce decorators as a refactoring opportunity. Both approaches work - decorators are just cleaner code organization using Python's decorator pattern.
+
+**What's a decorator?** A function that wraps another function to add behavior. `@login_required` wraps your route function and checks authentication before calling it. You'll see this pattern throughout Flask (`@app.route`, `@login_required`, etc.).
 
 ---
 
-### Understanding vs. Generating
-**You should understand:**
-- Why you chose your authentication method
-- How access control works in your app
-- What each database model represents
-- How routes map to user actions
-- Why certain security measures matter
+## Security Considerations
 
-**AI can help generate:**
-- Boilerplate code structure
-- Template HTML
-- CSS styling
-- Database query syntax
-- Error handling code
+Even as a prototype, avoid basic security issues:
 
-**Balance**: Use AI for speed, but stop to understand key concepts.
+### SECRET_KEY
+**Most important!** Used to sign session cookies and tokens.
+
+- ❌ NEVER use: "change-this-secret-key", "mysecretkey123", any memorizable value
+- ✅ Generate: `uv run python -c "import secrets; print(secrets.token_hex(32))"`
+- ✅ Store in `.env` file (never commit to git)
+- ✅ Minimum 64 hex characters (32 bytes)
+
+**If compromised**: Attackers can impersonate any user!
 
 ---
 
-## Project Structure
+### SQL Injection Prevention
+- ✅ Always use SQLAlchemy ORM
+- ❌ Never concatenate user input into SQL strings
+- ❌ Never use `db.session.execute(f"SELECT * FROM users WHERE username = '{username}'")`
+- ✅ Use `User.query.filter_by(username=username).first()`
 
-```
-phase1/
-├── app.py                 # Main Flask application, routes
-├── models.py              # Database models (User, Post, Follow)
-├── auth.py                # Authentication logic (if needed)
-├── .env                   # Environment variables (SECRET_KEY, etc.)
-├── static/
-│   ├── css/
-│   │   └── style.css     # Custom styling
-│   └── uploads/          # User-uploaded images (if implemented)
-└── templates/
-    ├── base.html         # Base template (navigation, structure)
-    ├── login.html        # Login page
-    ├── index.html        # Homepage/feed
-    └── profile.html      # User profile
+**Why**: Prevents attackers from injecting malicious SQL code
 
-shared/
-├── database/
-│   └── app.db            # SQLite database (created when app runs)
-└── invites.txt           # Allowed emails (if using file-based invites)
-```
+---
+
+### XSS Prevention
+- ✅ Jinja2 auto-escapes HTML by default (good!)
+- ❌ Don't use `|safe` filter on user-generated content
+- ✅ User input displayed as text, not executed as HTML/JS
+
+**Why**: Prevents attackers from injecting malicious scripts into your app
+
+---
+
+### File Upload Security (if implementing image uploads)
+- ✅ Validate file extensions (whitelist: .jpg, .png, .gif only)
+- ✅ Limit file sizes (use Flask's `MAX_CONTENT_LENGTH`)
+- ✅ Sanitize filenames (use `werkzeug.utils.secure_filename`)
+- ❌ Don't trust user-supplied filenames directly
+
+**Why**: Prevents attackers from uploading malicious files
+
+---
+
+### Environment Variables
+- ✅ `.env` in `.gitignore`
+- ❌ Never commit credentials to git
+- ✅ Use `.env.example` as template (with placeholder values)
+
+**Why**: Keeps secrets out of version control
 
 ---
 
@@ -553,7 +462,11 @@ shared/
 
 ### "No such table" errors
 **Cause**: Database not initialized
-**Solution**: Run `db.create_all()` in Flask shell
+**Solution**: Run `uv run python dev_scripts/init_database.py`
+
+### Routes return 404 even though they're defined
+**Cause**: Circular import issue between `app.py` and `routes.py`
+**Solution**: Use separate `database.py` module to break circular dependency (see CLAUDE.md)
 
 ### Session issues / "user not logged in"
 **Cause**: SECRET_KEY not set or changed
@@ -571,46 +484,9 @@ shared/
 **Cause**: Browser caching
 **Solution**: Hard refresh (Cmd/Ctrl + Shift + R) or restart Flask in debug mode
 
----
-
-## AI Prompting Tips
-
-### Structuring Your Prompts
-
-**Start with context:**
-```
-I'm building a Flask social media app with [your auth method] and [your access control model].
-```
-
-**Specify what you need:**
-```
-Create a route that allows users to [action].
-```
-
-**Mention constraints:**
-```
-- Should validate that post content is not empty and < 280 chars
-- Should redirect to homepage after success
-- Should flash an error message if validation fails
-```
-
-**Ask for explanations when needed:**
-```
-Also explain why we use db.session.commit() and when it's needed.
-```
-
----
-
-### Working Through the TODO
-
-The `TODO-phase1.md` guides you through implementation. Here's how to use it with Claude:
-
-1. **Read the section** - Understand what you're building
-2. **Make decisions** (marked with 🎯) - Don't let AI choose these
-3. **Copy the provided prompt** - Give Claude the context
-4. **Review the code** - Don't just accept, understand it
-5. **Test immediately** - Verify it works before moving on
-6. **Ask questions** - If something is unclear, ask Claude to explain
+### Shared stylesheet not loading
+**Cause**: Need route to serve shared static files
+**Solution**: Configure Flask to serve from `shared/static/` directory (see CLAUDE.md)
 
 ---
 
@@ -618,16 +494,16 @@ The `TODO-phase1.md` guides you through implementation. Here's how to use it wit
 
 Before starting Phase 2, you should have:
 
-- [ ] **Working authentication** - Can login/logout successfully
+- [ ] **Working dev-mode login** - Can switch between users
 - [ ] **Post creation** - Can create and view posts
+- [ ] **Global feed** - Shows recent posts from all users
 - [ ] **User profiles** - Can view any user's profile
-- [ ] **Following system** - Can follow/unfollow users
-- [ ] **Personalized feed** - Shows appropriate posts based on access control model
-- [ ] **Invite system** - Respects invite list (if using real auth)
+- [ ] **At least one additional feature** - Following, real auth, likes, images, comments, search, or your own idea
 - [ ] **Basic UI** - App looks presentable and usable
 - [ ] **No critical bugs** - App runs without errors
 - [ ] **Code committed** - Saved to git repository
-- [ ] **Understanding** - Can explain how authentication and access control work
+- [ ] **DECISIONS-MADE-phase1.md** - Documents your architectural choices
+- [ ] **Understanding** - Can explain the objects/actions/views pattern and how your app works
 
 ---
 
@@ -638,24 +514,26 @@ By completing Phase 1, you should understand:
 ### Technical Skills
 - ✅ Flask routing and request handling
 - ✅ SQLAlchemy ORM and relationships
-- ✅ Session-based authentication
-- ✅ Server-side template rendering
+- ✅ Session-based authentication (at least dev mode)
+- ✅ Server-side template rendering (Jinja2)
 - ✅ Form handling and validation
 - ✅ Database queries and filtering
+- ✅ The Post-Redirect-Get pattern
 
 ### Architectural Concepts
 - ✅ Monolithic architecture pros/cons
 - ✅ Server-side rendering pattern
+- ✅ MVC (Model-View-Controller) pattern
 - ✅ Stateful authentication (sessions)
-- ✅ Access control models
 - ✅ Data modeling and relationships
+- ✅ Why tight coupling can be both good (simplicity) and bad (flexibility)
 
 ### Security Awareness
 - ✅ SECRET_KEY importance
-- ✅ SQL injection prevention
-- ✅ XSS prevention
-- ✅ Authentication vs authorization
+- ✅ SQL injection prevention (ORM benefits)
+- ✅ XSS prevention (auto-escaping)
 - ✅ Environment variable security
+- ✅ File upload security (if implemented)
 
 ---
 
@@ -664,25 +542,33 @@ By completing Phase 1, you should understand:
 Before moving to Phase 2, consider:
 
 1. **What architectural decisions did you make?**
-   - Authentication method:
-   - Access control model:
-   - Invite system approach:
+   - Which optional feature did you add and why?
+   - If you added real auth: Which method (OAuth/email) and why?
+   - If you added following: How did the many-to-many relationship work?
+   - What was easier than expected? What was harder?
 
-2. **What would be hard to change later?**
-   - Database schema (requires migration)
-   - Authentication method (requires code rewrite)
-   - Access control (requires route changes)
+2. **How did the objects/actions/views framework help?**
+   - Did thinking in these terms make planning easier?
+   - Could you describe your additional feature using this framework?
+   - Would this approach work for other web applications?
 
-3. **What limitations does this architecture have?**
-   - Must reload page for updates
-   - Can't easily support mobile app
-   - Tight coupling of frontend and backend
-   - Server renders every page
+3. **What would be hard to change later?**
+   - Database schema (requires migration or recreation)
+   - Authentication method (requires code rewrite throughout)
+   - Template structure (requires refactoring many files)
+   - Why is coupling a problem for making changes?
 
-4. **How did you use AI effectively?**
-   - What worked well:
-   - What was challenging:
-   - What did you learn:
+4. **What limitations does this monolithic architecture have?**
+   - Must reload page for updates (no real-time, no smooth UX)
+   - Can't easily support mobile app (HTML pages, not JSON API)
+   - Tight coupling of frontend and backend (change one, may need to change the other)
+   - Server renders every page (more server work, slower for users far away)
+
+5. **How did you use AI (Claude) effectively?**
+   - What prompting strategies worked well?
+   - When did you need to ask for clarification or explanations?
+   - What concepts did you learn by asking "why"?
+   - What did Claude explain that surprised you?
 
 **These limitations motivate Phase 2!** You'll address them with a separated REST API architecture.
 
@@ -692,17 +578,17 @@ Before moving to Phase 2, consider:
 
 Once Phase 1 is complete:
 
-1. **Test thoroughly** - Verify all features work
-2. **Commit your code** - Save to git
+1. **Test thoroughly** - Verify all features work end-to-end
+2. **Commit your code** - Save to git with meaningful commit messages
 3. **Take screenshots** - For portfolio/documentation
-4. **Review your learning** - What did you understand?
-5. **Move to Phase 2** - Read `TODO-phase2.md`
+4. **Review your learning** - What architectural concepts did you understand?
+5. **Move to Phase 2** - Read `ARCHITECTURE-GUIDE-phase2.md`, then tell Claude: "Read TODO-phase2.md and guide me through Phase 2"
 
-**Phase 2 Preview**: You'll build the same features with:
-- FastAPI backend (REST API)
-- React/Vue frontend (JavaScript)
-- JWT authentication (stateless)
-- Separated architecture
+**Phase 2 Preview**: You'll build similar features with:
+- FastAPI backend (REST API returning JSON)
+- React/Vue frontend (JavaScript, client-side rendering)
+- JWT authentication (stateless tokens)
+- Separated architecture (frontend and backend independent)
 
 Then you'll **compare** and understand the trade-offs!
 
@@ -713,16 +599,18 @@ Then you'll **compare** and understand the trade-offs!
 **Flask Documentation**: https://flask.palletsprojects.com/
 **SQLAlchemy**: https://docs.sqlalchemy.org/
 **Jinja2**: https://jinja.palletsprojects.com/
-**Flask-Login**: https://flask-login.readthedocs.io/
+**Flask-Login**: https://flask-login.readthedocs.io/ (if using real auth)
 
-**For detailed setup instructions**:
-- `TODO-phase1.md` - Step-by-step implementation
-- [`../SETUP-AUTHENTICATION.md`](../SETUP-AUTHENTICATION.md) - Authentication setup details
-- [`../deployment-guide.md`](../deployment-guide.md) - PythonAnywhere deployment
+**For implementation:**
+- Tell Claude: "Read TODO-phase1.md and guide me through Phase 1"
+  - Claude will follow this guide (you don't need to read it yourself)
+  - Includes structured conversations for learning core concepts
+- `SETUP-AUTHENTICATION.md` - Authentication setup details (if adding real auth as optional feature)
+- `deployment-guide.md` - PythonAnywhere deployment
 
 **Getting Help**:
 - Paste errors into Claude with context
-- Ask Claude to explain concepts
+- Ask Claude to explain concepts you don't understand
 - Office hours
 - Piazza
 
