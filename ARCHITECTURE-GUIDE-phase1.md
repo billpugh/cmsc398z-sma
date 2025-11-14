@@ -8,12 +8,12 @@ Build a fully functional social media prototype using Flask with server-side ren
 
 ## How to Use This Guide
 
-1. **Read this README** - Understand the architecture and design decisions (15 minutes)
+1. **Read this doc** - Understand the architecture and design decisions (15 minutes)
 2. **Tell Claude to guide you through Phase 1** - Say: "Read TODO-phase1.md and guide me through Phase 1"
    - **Important**: `TODO-phase1.md` is a guide for Claude, not for you to read directly
    - Claude will follow it to lead you through a structured conversation
    - You'll make decisions, learn concepts, and implement features step-by-step
-3. **Reference `../SETUP-AUTHENTICATION.md`** - Detailed authentication setup (if adding real auth as optional feature)
+3. If you decide to implement real authentication (an optional feature) read  [SETUP-AUTHENTICATION.md](SETUP-AUTHENTICATION.md) - Detailed authentication setup (if adding real auth as optional feature)
 
 This README explains **WHY** and **WHAT**. Claude uses TODO.md to guide **HOW**.
 
