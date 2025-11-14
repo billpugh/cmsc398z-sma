@@ -1,3 +1,4 @@
+*.db
 __about__.py
 __init__.py
 __init__.pyi
@@ -152,7 +153,6 @@ annotation.py
 apache.py
 api_key.py
 api.py
-app.py
 applications.py
 apply.py
 apps.py
@@ -500,7 +500,6 @@ mixins.py
 mock.py
 model_field.py
 model.py
-models.py
 modes.py
 mssql.py
 multipart.py
