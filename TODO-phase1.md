@@ -89,6 +89,24 @@ When generating the CSS, ensure buttons inside `<nav>` have sufficient contrast 
 - Example: If navbar background is dark, use light button text; if navbar background is light, use dark button text
 - Make sure both normal and hover states maintain good contrast
 
+**IMPORTANT - Navbar Forms (Logout Button Issue):**
+Logout buttons are typically inside `<form>` elements (POST requests), while login buttons are just links. This can cause visibility and sizing issues:
+- **Common issue:** Logout button appears white-on-white (invisible) or significantly taller than login button
+- **Root cause:** Form CSS (padding, background-color, margins) interferes with navbar styling
+- **Solution:** Add nav-specific form styles to override general form styles:
+  ```css
+  nav form {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    display: inline;
+  }
+  nav form button {
+    /* Ensure buttons in forms match link buttons in nav */
+  }
+  ```
+- **If student reports button visibility issues:** Check if the problematic button is inside a `<form>` tag and apply nav form overrides
+
 The key principle: **navbar buttons must be clearly visible against the navbar background, whatever color scheme was chosen**.
 
 Link this stylesheet in base template later.
@@ -1013,69 +1031,32 @@ Generate the code, then:
 
 🤖 **Claude: IMPORTANT - Assess if we need to migrate or recreate the database:**
 
-**For most common features (Follow, Like, Comment), we can ADD the new table without deleting existing users/posts!**
+**See DEV-PATTERNS.md** for detailed migration guidance. Key decision:
 
-#### Strategy 1: Migrate (Preferred - Preserves Data)
+- **✅ Migrate (Preferred)** - For adding new tables or nullable columns → preserves student's test data
+- **❌ Recreate** - Only for structural changes to existing tables → loses test data
 
-**Use when adding NEW tables or NULLABLE columns**
+**Most common features (Follow, Like, Comment) can use migrations!**
+
+#### If Migrating (Preserves Data):
 
 🤖 **Claude: Say:**
-
 > "Good news! Since we're just adding a new table, I can preserve your existing users and posts. You won't need to recreate them!"
 
-**Create `dev_scripts/add_[feature]_table.py`:**
+**Follow DEV-PATTERNS.md to:**
+1. Create `dev_scripts/add_[feature]_table.py` with the migration code
+2. Run: `uv run python dev_scripts/add_[feature]_table.py`
+3. Verify the database file still exists
 
-Example for Follow table:
-```python
-"""Add Follow table to existing database without deleting users/posts."""
-from database import app, db
-from models import Follow  # Import ONLY the new model
-
-with app.app_context():
-    # Create only the new table, preserving existing data
-    Follow.__table__.create(db.engine, checkfirst=True)
-    db.session.commit()
-    print("✅ Follow table added successfully!")
-    print("✅ Your existing users and posts are preserved!")
-    print(f"Tables in database: {list(db.metadata.tables.keys())}")
-```
-
-**Then run it:**
-```bash
-uv run python dev_scripts/add_follow_table.py
-```
-
-🤖 **Explain to student**:
-- We're adding JUST the new table, not recreating everything
-- Your test users and posts are still there!
-- `checkfirst=True` prevents errors if the table already exists
-- This is how real developers add features - migrations preserve data
-- In production, we'd use tools like Alembic, but this accomplishes the same goal
-
-**Verify:**
-```bash
-ls -la ../shared/database/
-```
-
-The `app.db` file should still exist with the same size or slightly larger.
-
-- [ ] New model(s) created
-- [ ] Student reviewed and approved
-- [ ] New table added via migration
+- [ ] New model(s) created and student reviewed
+- [ ] Migration script created and run
 - [ ] **Existing users and posts preserved!**
 
 ---
 
-#### Strategy 2: Recreate (Only When Necessary)
-
-**Use ONLY when making structural changes to existing tables:**
-- Making nullable columns required
-- Changing column types
-- Renaming columns (SQLite limitation)
-- Removing columns
+#### If Recreating (Loses Data):
 
 🤖 **Claude: Say:**
-
 > "⚠️ Unfortunately, the changes we need to make require recreating the database. This means you'll need to create your test users and posts again.
 >
 > The changes are:
@@ -1085,57 +1066,15 @@ The `app.db` file should still exist with the same size or slightly larger.
 
 🛑 **STOP: Wait for student confirmation**
 
-**Create `dev_scripts/reset_database.py`:**
-```python
-"""Reset database - deletes existing database and creates new one with all tables."""
-from database import app, db
-from models import User, Post, Follow  # Import ALL models including new ones!
-import os
+**Follow DEV-PATTERNS.md to:**
+1. Create `dev_scripts/reset_database.py` with the reset code
+2. Run: `uv run python dev_scripts/reset_database.py`
+3. Verify new database file exists
 
-with app.app_context():
-    # Get database path
-    db_path = app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', '')
-    print(f"Database path: {db_path}")
-
-    # Delete old database
-    db.session.remove()
-    if os.path.exists(db_path):
-        os.remove(db_path)
-        print("✅ Old database deleted")
-
-    # Create new database with ALL tables
-    db.create_all()
-    db.session.execute(db.text("SELECT 1"))  # Force SQLite to write file
-    db.session.commit()
-    print(f"✅ New database created with tables: {list(db.metadata.tables.keys())}")
-    print("⚠️  You'll need to create test users and posts again")
-```
-
-**Then run it:**
-```bash
-uv run python dev_scripts/reset_database.py
-```
-
-🤖 **Explain to student**:
-- We're recreating the database because of structural changes to existing tables
-- This will delete all existing data (test users and posts)
-- In production, we'd write a data migration to transform existing data
-- Must import ALL models so SQLAlchemy knows about them
-- Must execute a query + commit to force SQLite to actually write the file
-- Script is saved in `dev_scripts/` so you can easily reset the database later if needed
-
-**Verify database was created:**
-```bash
-ls -la ../shared/database/
-```
-
-Should see `app.db` file (not empty directory).
-
-- [ ] New model(s) created
-- [ ] Student reviewed and approved
+- [ ] New model(s) created and student reviewed
 - [ ] Student confirmed recreation is OK
-- [ ] Database recreated with new table(s)
-- [ ] Verified database file exists
+- [ ] Reset script created and run
+- [ ] Database recreated successfully
 - [ ] Student knows they need to create users again
 
 ---
