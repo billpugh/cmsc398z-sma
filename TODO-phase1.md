@@ -1325,6 +1325,42 @@ Built with AI assistance (Claude Code)
 
 ---
 
+### Task 9.6: Optional Shared Models Migration (Before Phase 2)
+
+**If you plan to do Phase 2**, you can optionally migrate to shared models now (15-20 minutes):
+
+🤖 **Claude: Say:**
+
+> **Optional Next Step: Shared Models Migration**
+>
+> Before you move on to Phase 2, you have an option to refactor your code to use shared models.
+>
+> **What it does:**
+> - Moves your `models.py` to `shared/models.py`
+> - Updates Phase 1 to import from shared
+> - When you build Phase 2, both phases will use the exact same models
+> - Eliminates code duplication and ensures schema consistency
+>
+> **Benefits:**
+> - ✅ No duplicate model files between phases
+> - ✅ Impossible for schemas to drift
+> - ✅ Better code organization (models independent of framework)
+> - ✅ Only 15-20 minutes to do now
+>
+> **Not required:**
+> - You can skip this and Phase 2 will have its own models
+> - You'd just need to keep them in sync manually
+>
+> Would you like to do the shared migration now, or skip it?
+> - To migrate: Tell me "Read TODO-SHARED-MIGRATION.md and guide me through it"
+> - To skip: Just say "skip for now" and you're done with Phase 1!
+
+🛑 **STOP: Let student decide**
+
+- [ ] Student chose to migrate (completed TODO-SHARED-MIGRATION.md) OR chose to skip
+
+---
+
 ## Completion Checklist
 
 ### Required for Submission:

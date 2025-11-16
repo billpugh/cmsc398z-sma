@@ -105,6 +105,26 @@ By building the same features twice with different architectures, you'll underst
 
 ---
 
+## Between Phases: Optional Shared Models Migration
+
+**After completing Phase 1, before starting Phase 2** (optional, ~15-20 minutes):
+
+You can optionally migrate to a shared models approach that eliminates code duplication:
+- Creates `shared/models.py` used by both Phase 1 and Phase 2
+- Ensures identical database schema across phases
+- Teaches better code organization (models independent of framework)
+
+```
+Tell Claude:
+"Read TODO-SHARED-MIGRATION.md and guide me through the migration"
+```
+
+**Benefits**: No duplicate model files, impossible for schemas to drift, better architecture.
+
+**Not required**: You can skip this and Phase 2 will have its own models (you'll just need to keep them in sync manually).
+
+---
+
 ## Phase 2: REST API + JavaScript Frontend
 
 **Goal**: Rebuild with separated architecture (2-2.5 hours) to understand REST API design and client-server separation.
@@ -151,6 +171,7 @@ By building the same features twice with different architectures, you'll underst
 ├── README.md                            # This file - project overview
 ├── TODO-phase1.md                       # Phase 1 implementation guide ⭐
 ├── TODO-phase2.md                       # Phase 2 implementation guide ⭐
+├── TODO-SHARED-MIGRATION.md             # Optional: Migrate to shared models (between phases)
 ├── ARCHITECTURE-GUIDE-phase1.md         # Phase 1 concepts
 ├── ARCHITECTURE-GUIDE-phase2.md         # Phase 2 concepts
 ├── SETUP-AUTHENTICATION.md              # Authentication setup (both phases)

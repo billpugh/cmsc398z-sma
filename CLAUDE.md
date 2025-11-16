@@ -19,6 +19,7 @@ The project emphasizes understanding architectural patterns, REST API design, an
 ├── README.md                            # Main project overview and AI-guided workflow
 ├── TODO-phase1.md                       # Phase 1 implementation guide with Claude instructions
 ├── TODO-phase2.md                       # Phase 2 implementation guide with Claude instructions
+├── TODO-SHARED-MIGRATION.md             # Optional: Migrate to shared models between phases
 ├── ARCHITECTURE-GUIDE-phase1.md         # Phase 1 concepts (WHY/WHAT)
 ├── ARCHITECTURE-GUIDE-phase2.md         # Phase 2 concepts (WHY/WHAT)
 ├── SETUP-AUTHENTICATION.md              # Authentication setup (both phases)
@@ -31,7 +32,10 @@ The project emphasizes understanding architectural patterns, REST API design, an
 │   │   └── app.db                       # SQLite database (created when Phase 1 runs)
 │   ├── static/
 │   │   └── style.css                    # Shared stylesheet for both phases
-│   └── invites.txt                      # List of invited emails
+│   ├── invites.txt                      # List of invited emails
+│   ├── models.py                        # OPTIONAL: Shared database models (after migration)
+│   ├── database.py                      # OPTIONAL: Shared database config (after migration)
+│   └── __init__.py                      # OPTIONAL: Makes shared a Python package (after migration)
 │
 ├── phase1/                              # Phase 1: Flask monolithic app (student creates files here)
 │   ├── .env.example                     # Environment template
@@ -39,7 +43,7 @@ The project emphasizes understanding architectural patterns, REST API design, an
 │   ├── pyproject.toml                   # Python dependencies
 │   ├── DECISIONS-MADE-phase1.md         # Student's architectural decisions (updated in Part 1)
 │   ├── app.py                           # STUDENT CREATES: Main Flask app
-│   ├── models.py                        # STUDENT CREATES: Database models
+│   ├── models.py                        # STUDENT CREATES: Database models (or imports from shared/)
 │   ├── auth.py                          # STUDENT CREATES: Authentication (if needed)
 │   ├── templates/                       # STUDENT CREATES: HTML templates
 │   │   ├── base.html
@@ -56,8 +60,8 @@ The project emphasizes understanding architectural patterns, REST API design, an
     │   ├── .gitignore
     │   ├── pyproject.toml
     │   ├── main.py                      # STUDENT CREATES: FastAPI app
-    │   ├── models.py                    # STUDENT CREATES: Database models
-    │   ├── database.py                  # STUDENT CREATES: Database connection
+    │   ├── models.py                    # STUDENT CREATES: Database models (or imports from shared/)
+    │   ├── database.py                  # STUDENT CREATES: Database connection (or imports from shared/)
     │   ├── auth.py                      # STUDENT CREATES: JWT authentication
     │   └── ...
     └── frontend/                        # React/Vue frontend
@@ -77,8 +81,94 @@ The project emphasizes understanding architectural patterns, REST API design, an
 - `shared/database/app.db` - Database shared between phases (or Phase 2 can use its own)
 - `shared/static/style.css` - Stylesheet shared between phases
 - `shared/invites.txt` - Invite list (if using text file approach)
+- `shared/models.py` - (Optional, after migration) Shared database models for both phases
+- `shared/database.py` - (Optional, after migration) Shared database configuration
+- `shared/__init__.py` - (Optional, after migration) Python package marker
 
 **CRITICAL:** Do NOT copy `shared/static/style.css` into `phase1/static/` or `phase2/frontend/`. It must remain in the shared directory so both phases can use the same styles. Configure Flask/FastAPI to serve it from the shared location.
+
+**OPTIONAL SHARED MODELS:**
+After completing Phase 1, students can optionally migrate to shared models (see TODO-SHARED-MIGRATION.md). This:
+- Eliminates duplicate `models.py` files in both phases
+- Ensures identical database schema across phases
+- Teaches proper code organization (models independent of framework)
+- Recommended before starting Phase 2, but can be done anytime
+
+---
+
+## ⚠️ CRITICAL: Working with Directory Structure
+
+**IMPORTANT**: The directory structure (`phase1/`, `phase2/`, `shared/`) should already exist when you start working on a phase. **DO NOT create these top-level directories** - they are part of the repository structure.
+
+**Before creating ANY file, ALWAYS:**
+
+1. **Check your current working directory**:
+   ```bash
+   pwd  # Should show: /Users/.../cmsc398z-sma or /Users/.../cmsc398z-sma/phase1 or /Users/.../cmsc398z-sma/phase2/backend
+   ```
+
+2. **Verify the file's intended location** using the Project Structure diagram above
+
+3. **Use absolute paths** or correct relative paths based on current directory
+
+**Common mistakes to AVOID:**
+
+❌ **Creating phase2/ inside phase1/**
+```bash
+# WRONG - current directory is /Users/.../cmsc398z-sma/phase1
+mkdir phase2  # This creates phase1/phase2/ ❌
+```
+
+✅ **Correct approach:**
+```bash
+# Check current directory first
+pwd  # Shows: /Users/.../cmsc398z-sma/phase1
+
+# Navigate to correct location
+cd ..  # Now in /Users/.../cmsc398z-sma
+
+# Verify phase2 already exists
+ls -la  # Should show: phase1/ phase2/ shared/
+```
+
+❌ **Creating files in wrong directory**
+```bash
+# WRONG - trying to create phase2/backend/main.py while in phase1/
+Write tool: file_path="/Users/.../cmsc398z-sma/phase1/phase2/backend/main.py"  # ❌
+```
+
+✅ **Correct approach:**
+```bash
+# Reference the Project Structure in CLAUDE.md
+# Phase 2 backend files go in: phase2/backend/
+# Use absolute path: /Users/.../cmsc398z-sma/phase2/backend/main.py
+```
+
+**Verification checklist before creating files:**
+
+1. ✅ Is the parent directory (`phase1/`, `phase2/backend/`, `shared/`) already in the repository?
+2. ✅ Does my current directory match where I think I am? (`pwd`)
+3. ✅ Does the file path match the Project Structure diagram in CLAUDE.md?
+4. ✅ Am I using the correct absolute path or relative path from current directory?
+
+**If you encounter "No such file or directory" errors:**
+
+1. Run `pwd` to check current directory
+2. Run `ls -la` to see what directories exist
+3. Compare with Project Structure diagram in CLAUDE.md
+4. Adjust file path accordingly
+
+**Directory ownership:**
+
+- `phase1/`, `phase2/`, `shared/` - **Repository provides these** (already exist)
+- `phase1/templates/`, `phase1/static/` - **Student/Claude creates these** (during Phase 1)
+- `phase2/backend/`, `phase2/frontend/` - **Repository provides these** (already exist with starter files)
+- `phase2/frontend/src/components/` - **Student/Claude creates these** (during Phase 2)
+- `shared/database/`, `shared/static/` - **Repository provides these** (already exist)
+
+**When in doubt:** Reference the Project Structure diagram at the top of this file!
+
+---
 
 ## Core Features
 
@@ -149,10 +239,17 @@ Students must implement at least ONE additional feature, articulating the design
 
 **Phase 2**:
 1. Student tells Claude: "Read TODO-phase2.md and guide me through Phase 2"
-2. Claude asks for key decisions (frontend framework, auth method, features to implement)
-3. Claude updates `phase2/DECISIONS-MADE-phase2.md` as decisions are made
-4. Claude guides through backend and frontend implementation
-5. Student can reference `phase1/` code and reuse `shared/database/app.db`
+2. **Part 0** (optional, 15-20 min): **Shared models migration** (if not already done)
+   - Claude checks if `shared/models.py` exists
+   - If not, offers to migrate Phase 1 to use shared models
+   - Recommended for students who have completed Phase 1
+   - See TODO-SHARED-MIGRATION.md for detailed steps
+   - Benefits: eliminates duplicate code, ensures schema consistency
+3. **Part 1**: Claude asks for key decisions (frontend framework, auth method, features to implement)
+4. Claude updates `phase2/DECISIONS-MADE-phase2.md` as decisions are made
+5. Claude guides through backend and frontend implementation
+6. Student can reference `phase1/` code and reuse `shared/database/app.db`
+7. If shared models exist, Phase 2 automatically imports from `shared/models.py`
 
 **Documentation files**:
 - **DECISIONS-MADE files** (`phase1/DECISIONS-MADE-phase1.md` and `phase2/DECISIONS-MADE-phase2.md`):

@@ -60,6 +60,90 @@ This file is designed to guide you through helping a student build a REST API (F
 
 ---
 
+## Part 0: Shared Models Migration Check (IMPORTANT!)
+
+**🤖 Claude: Before starting Phase 2, check if the student has migrated to shared models.**
+
+**🤖 Claude: Do the following checks:**
+
+1. Check if `shared/models.py` exists
+2. Check if `shared/database.py` exists
+3. Check if `phase1/models.py` still exists (indicates they haven't migrated)
+
+**🤖 Claude: Based on the checks, say ONE of the following:**
+
+### If shared models DON'T exist (typical case):
+
+> **Before we start Phase 2, I recommend migrating to shared models.** This will:
+> - Eliminate duplicate code between Phase 1 and Phase 2
+> - Ensure both phases use identical database schema
+> - Make maintenance much easier
+> - Teach better code organization principles
+>
+> **The migration takes 15-20 minutes** and involves:
+> 1. Creating a `shared/` Python package with your models
+> 2. Updating Phase 1 to import from `shared/` instead of local `models.py`
+> 3. Testing that Phase 1 still works
+> 4. (Then Phase 2 will automatically use the same models)
+>
+> **Would you like to do the shared migration now, or skip it?**
+>
+> - **Option A**: Do the migration now (recommended) - I'll guide you through TODO-SHARED-MIGRATION.md
+> - **Option B**: Skip for now - Phase 2 will have its own models (you'll need to keep them in sync manually)
+
+🛑 **Wait for student's choice**
+
+**🤖 Claude: If they choose Option A:**
+> Great choice! Let's walk through the shared migration. I'll read TODO-SHARED-MIGRATION.md and guide you through it step by step.
+
+**Then follow TODO-SHARED-MIGRATION.md completely before returning to this file.**
+
+**🤖 Claude: If they choose Option B:**
+> Understood. We'll proceed with Phase 2 having its own separate models. Just be aware that if you change your database schema, you'll need to update models in both `phase1/models.py` and `phase2/backend/models.py`.
+
+**Then proceed to Part 1 below.**
+
+### If shared models ALREADY exist:
+
+> **Great! I can see you've already migrated to shared models.** Your `shared/models.py` and `shared/database.py` files are ready.
+>
+> This means:
+> - ✅ Phase 2 will automatically use the same models as Phase 1
+> - ✅ Both phases share the same database schema
+> - ✅ No need to keep multiple model files in sync
+>
+> Let's proceed with Phase 2!
+
+**Then proceed to Part 1 below.**
+
+### If student already started Phase 2 without migration:
+
+**🤖 Claude: If you see both `phase1/models.py` AND `phase2/backend/models.py` exist, say:**
+
+> **I notice you've already started Phase 2 with separate models.** You have two options:
+>
+> **Option A**: Migrate both phases to shared models now (recommended)
+> - Takes 20-25 minutes
+> - Eliminates code duplication
+> - Prevents schema drift between phases
+> - See TODO-SHARED-MIGRATION.md Part 5 for migration with existing Phase 2
+>
+> **Option B**: Keep separate models (not recommended)
+> - Faster to continue with current setup
+> - But you'll need to manually keep both model files in sync
+> - Risk of schema mismatches between phases
+>
+> Which would you prefer?
+
+🛑 **Wait for student's choice, then proceed accordingly.**
+
+---
+
+- [ ] Shared models migration check completed
+- [ ] Decision made: migrated OR proceeding with separate models
+
+---
+
 ## Part 1: Key Decisions
 
 🤖 **Claude: Follow the "Multiple Related Decisions Flow" pattern from CLAUDE.md. Summary:**
