@@ -129,11 +129,11 @@ Post
 
 After implementing the minimal features, you must choose at least ONE additional feature to implement. Here are some options:
 
-- 🔐 **Real Authentication** - Replace dev mode with Google OAuth or email magic links (see `SETUP-AUTHENTICATION.md`)
 - 👥 **Following System** - Follow/unfollow users, personalized feed showing only posts from followed users
 - ❤️ **Likes** - Like/unlike posts, show like counts
 - 📷 **Image Uploads** - Attach images to posts (file handling, validation)
 - 💬 **Comments** - Add comments to posts (nested content)
+- 🔐 **Real Authentication** - Replace dev mode with Google OAuth or email magic links (see `SETUP-AUTHENTICATION.md`). Required if you want to deploy this app to a host where others can see and use it. 
 - 🔍 **Search** - Find users or posts by keyword (full-text search)
 - 👤 **Profile Editing** - Edit display name, add bio and avatar
 - 🎨 **Better UI** - Polish with CSS frameworks (responsive design)
