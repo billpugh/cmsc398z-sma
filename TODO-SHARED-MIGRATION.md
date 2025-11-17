@@ -90,6 +90,8 @@ This guide helps students refactor their Phase 1 application to use shared model
 > 3. `database.py` - Database configuration and utilities
 >
 > These will use **plain SQLAlchemy** instead of Flask-SQLAlchemy, which works with both Flask and FastAPI.
+>
+> I'll also configure DATABASE_URL in your `.env` files so each phase knows how to find the shared database.
 
 **🤖 Claude: Do:**
 
@@ -108,29 +110,37 @@ This guide helps students refactor their Phase 1 application to use shared model
    import os
    from pathlib import Path
 
-   # Get database URL from environment, default to shared location
-   DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./shared/database/app.db')
+   # IMPORTANT: Create Base FIRST before anything else
+   # This must be created before being imported by models.py to avoid circular imports
+   Base = declarative_base()
 
-   # Convert relative path to absolute if using SQLite
-   if DATABASE_URL.startswith('sqlite:///'):
+   # Get database URL from environment variable
+   # Each phase should set DATABASE_URL in its .env file with the appropriate relative path
+   # Phase 1 (.env): DATABASE_URL=sqlite:///../shared/database/app.db
+   # Phase 2 (.env): DATABASE_URL=sqlite:///../../shared/database/app.db
+   #
+   # If not set, default to shared/database/app.db relative to this file's location
+   default_db_path = Path(__file__).parent / "database" / "app.db"
+   DATABASE_URL = os.getenv('DATABASE_URL', f'sqlite:///{default_db_path}')
+
+   # Convert relative SQLite paths to absolute paths
+   # This allows each phase to use relative paths in their .env files
+   if DATABASE_URL.startswith('sqlite:///') and not DATABASE_URL.startswith('sqlite:////'):
        db_path = DATABASE_URL.replace('sqlite:///', '')
        if not db_path.startswith('/'):
-           # Relative path - make it relative to repo root
-           repo_root = Path(__file__).parent.parent
-           abs_path = repo_root / db_path
+           # Relative path - convert to absolute based on current working directory
+           abs_path = Path.cwd() / db_path
+           abs_path = abs_path.resolve()  # Resolve to canonical absolute path
            DATABASE_URL = f'sqlite:///{abs_path}'
 
    # Create engine
    engine = create_engine(
        DATABASE_URL,
-       connect_args={"check_same_thread": False} if DATABASE_URL.startswith('sqlite') else {}
+       connect_args={"check_same_thread": False} if 'sqlite' in DATABASE_URL else {}
    )
 
    # Create session factory
    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-   # Create base class for models
-   Base = declarative_base()
 
    def get_db():
        """Get database session (for dependency injection pattern)."""
@@ -147,26 +157,73 @@ This guide helps students refactor their Phase 1 application to use shared model
        Base.metadata.create_all(bind=engine)
    ```
 
-4. Show student the created files
+   **IMPORTANT NOTE**: The `Base = declarative_base()` line MUST come before the database URL
+   configuration to avoid circular import issues when `models.py` imports `Base`.
+
+4. Configure DATABASE_URL in `.env` files:
+   - Add to `phase1/.env`: `DATABASE_URL=sqlite:///../shared/database/app.db`
+   - Verify `phase2/backend/.env` has: `DATABASE_URL=sqlite:///../../shared/database/app.db`
+
+5. Show student the created files
 
 **🤖 Claude: Say:**
 
-> I've created the shared package with your models. The key changes:
+> I've created the shared package with your models. Now let me explain an important configuration detail about the database path.
 >
-> **Before (Flask-SQLAlchemy)**:
-> ```python
-> class User(db.Model):
->     id = db.Column(db.Integer, primary_key=True)
-> ```
+> **Understanding DATABASE_URL Configuration:**
 >
-> **After (Plain SQLAlchemy)**:
-> ```python
-> class User(Base):
->     __tablename__ = 'user'
->     id = Column(Integer, primary_key=True)
-> ```
+> Since Phase 1 and Phase 2 run from different directories, we need a flexible way to point them both to the same database file:
 >
-> These are functionally identical - just different syntax. Plain SQLAlchemy works with any framework.
+> - **Phase 1** runs from: `phase1/` (when you do `cd phase1 && uv run flask run`)
+> - **Phase 2** runs from: `phase2/backend/` (when you do `cd phase2/backend && uv run uvicorn main:app --reload`)
+> - **Database location**: `shared/database/app.db`
+>
+> Each phase needs a **different relative path** to reach the same database:
+>
+> - **From phase1/**: Go up one level, then into shared → `../shared/database/app.db`
+> - **From phase2/backend/**: Go up two levels, then into shared → `../../shared/database/app.db`
+>
+> **The solution**: Each phase sets `DATABASE_URL` in its own `.env` file with the correct relative path.
+>
+> I'll add/update the DATABASE_URL in:
+> - `phase1/.env` → `DATABASE_URL=sqlite:///../shared/database/app.db`
+> - `phase2/backend/.env` → `DATABASE_URL=sqlite:///../../shared/database/app.db`
+>
+> The `shared/database.py` code then reads this environment variable and converts the relative path to an absolute path based on the **current working directory** (where you ran the command from).
+>
+> **Why this approach?**
+> - ✅ Flexible: Each phase controls its own database path
+> - ✅ Clear: Easy to see where each phase looks for the database
+> - ✅ Can easily switch: Want Phase 2 to use a different database? Just change its .env
+>
+> Does this approach make sense to you? Any questions about how the paths work?
+
+🛑 **Wait for student confirmation/questions before proceeding**
+
+**🤖 Claude: Say (after student confirms):**
+
+> Great! Now let's review the key differences between Flask-SQLAlchemy and plain SQLAlchemy. Understanding this conversion is important because it shows how to write framework-agnostic code.
+>
+> **Compare these two files:**
+> - Old: `phase1/models.py.backup` (or your current `phase1/models.py`) - Flask-SQLAlchemy
+> - New: `shared/models.py` - Plain SQLAlchemy
+>
+> Open both files side by side. Can you spot these differences:
+>
+> 1. **Base class**: What replaced `db.Model`? (Look at what each model class inherits from)
+> 2. **Column imports**: How are Column types imported differently? (Compare the import statements at the top)
+> 3. **Table names**: Do you see `__tablename__ = 'user'` in the new version? Why is this needed now when it wasn't before?
+> 4. **Column syntax**: Compare `db.Column(db.Integer, ...)` vs `Column(Integer, ...)` - what changed?
+>
+> **The key insight**: Plain SQLAlchemy works with ANY Python framework (Flask, FastAPI, Django, etc.), while Flask-SQLAlchemy only works with Flask. That's why we're converting - so Phase 2 (FastAPI) can use the same models!
+>
+> Take a minute to review both files. Any questions about the conversion?
+
+🛑 **STOP: Wait for student to review. Answer questions. Confirm understanding of framework-agnostic design benefits.**
+
+- [ ] Student compared Flask-SQLAlchemy vs plain SQLAlchemy
+- [ ] Student understands why we need `__tablename__` explicitly
+- [ ] Student understands framework-agnostic code benefits
 
 ---
 
@@ -214,7 +271,7 @@ def get_db():
     finally:
         db.close()
 
-# Or use Flask's g object for request-scoped sessions:
+# Use Flask's g object for request-scoped sessions:
 @app.before_request
 def before_request():
     from flask import g
@@ -227,37 +284,129 @@ def teardown_request(exception):
     if db is not None:
         db.close()
 
-# Then in routes, use: from flask import g; g.db.query(User)...
+# Helper function to get database session (cleaner than using g.db everywhere)
+def get_db_session():
+    """Get the current database session from Flask's g object."""
+    try:
+        return g.db
+    except RuntimeError as e:
+        raise RuntimeError(
+            "get_db_session() must be called within a Flask request context. "
+            "This function is only available during request handling."
+        ) from e
+
+# Then in routes, use: db = get_db_session(); db.query(User)...
 ```
 
-2. Update all routes in `phase1/app.py` to use the new session pattern:
-   - Replace `db.session.query(...)` with `g.db.query(...)`
-   - Replace `db.session.add(...)` with `g.db.add(...)`
-   - Replace `db.session.commit()` with `g.db.commit()`
-   - Replace `db.session.delete(...)` with `g.db.delete(...)`
+   **Note**: The `get_db_session()` helper makes code cleaner and provides better error messages
+   if accidentally called outside a request context.
 
-3. If `phase1/auth.py` exists and uses models, update it:
-   - Add same sys.path manipulation
+2. Update all routes to use the new session pattern:
+
+   **Pattern to use in each route:**
+   ```python
+   @app.route('/some-route')
+   def some_route():
+       db = get_db_session()  # Get session at start of route
+       users = db.query(User).all()  # Use db instead of db.session
+       db.add(new_user)  # Add to session
+       db.commit()  # Commit changes
+       return ...
+   ```
+
+   **Find and replace:**
+   - `User.query` → `db.query(User)`
+   - `Post.query` → `db.query(Post)`
+   - `Like.query` → `db.query(Like)`
+   - `Follow.query` → `db.query(Follow)`
+   - `db.session.add(...)` → `db.add(...)`
+   - `db.session.commit()` → `db.commit()`
+   - `db.session.delete(...)` → `db.delete(...)`
+
+   **IMPORTANT**: Add `db = get_db_session()` at the start of EACH route function.
+
+3. Update `phase1/routes.py` (if it's a separate file):
+   - Import from shared.models: `from shared.models import User, Post, Like, Follow`
+   - Import the helper: `from database import app, get_db_session, MAX_POST_LENGTH`
+   - **DO NOT add** `sys.path.insert()` here - it's already done in `database.py`
+   - Adding sys.path in multiple files is redundant and can cause confusion
+
+4. If `phase1/auth.py` exists and uses models, update it:
    - Import from shared.models
+   - **DO NOT add** `sys.path.insert()` - already done in `database.py`
    - Update session usage
 
-4. Update `phase1/.env` if needed:
-   - Ensure DATABASE_URL points to correct location
-   - If database was in phase1/, it should now point to `sqlite:///../shared/database/app.db`
+5. Update `phase1/.env`:
+   - Add or update: `DATABASE_URL=sqlite:///../shared/database/app.db`
+   - This tells Phase 1 to use the shared database (relative path from phase1/ directory)
 
-5. Remove or rename old `phase1/models.py`:
+6. **CRITICAL**: Update templates to fix `.count()` errors:
+
+   Flask-SQLAlchemy used `lazy='dynamic'` which made relationships queryable with `.count()`.
+   Plain SQLAlchemy loads relationships as lists, so we need to use `len()` or Jinja's `|length` filter.
+
+   Find and replace in all templates:
+   - `{{ post.likes.count() }}` → `{{ post.likes|length }}`
+   - `{{ user.posts.count() }}` → `{{ user.posts|length }}`
+   - `{{ user.followers.count() }}` → `{{ user.followers|length }}`
+   - Any other `.count()` calls on relationships
+
+   Common locations:
+   - `templates/index.html`
+   - `templates/profile.html`
+
+   **Why this is needed**: With plain SQLAlchemy, `post.likes` is an `InstrumentedList` (Python list).
+   Calling `.count()` with no arguments fails because `list.count(item)` requires an argument.
+
+7. Remove or rename old `phase1/models.py`:
    ```bash
    mv phase1/models.py phase1/models.py.backup
    ```
 
 **🤖 Claude: Say:**
 
-> I've updated Phase 1 to use the shared models. The main changes:
+> I've updated Phase 1 to use the shared models. Before we test it, let's review how database session management changed. This is an important architectural pattern that you'll see again in FastAPI.
 >
-> 1. **Import path setup**: Added `sys.path.insert(0, ...)` so Python can find the shared package
-> 2. **Model imports**: Changed from `from models import User` to `from shared.models import User`
-> 3. **Session management**: Changed from `db.session` to Flask's `g.db` (request-scoped)
+> Open `phase1/app.py` (or `phase1/database.py`) and look at the session management section:
 >
+> **Find these three key parts:**
+> 1. `@app.before_request` - What does this function do?
+> 2. `@app.teardown_request` - Why do we need this?
+> 3. `get_db_session()` helper function - What does this return?
+>
+> **Now compare how routes use the session:**
+>
+> **Old (Flask-SQLAlchemy):**
+> ```python
+> @app.route('/posts')
+> def posts():
+>     posts = Post.query.all()  # Magic! Where does 'query' come from?
+>     return render_template('posts.html', posts=posts)
+> ```
+>
+> **New (Plain SQLAlchemy):**
+> ```python
+> @app.route('/posts')
+> def posts():
+>     db = get_db_session()  # Explicit session
+>     posts = db.query(Post).all()  # Clear what we're querying
+>     return render_template('posts.html', posts=posts)
+> ```
+>
+> Can you explain:
+> 1. Where does `db` come from in the new version? (Hint: it's stored in Flask's `g` object)
+> 2. Why do we close the session in `teardown_request`? What would happen if we didn't?
+> 3. What's the benefit of the request-scoped session pattern? (Why not just use one global session?)
+>
+> **Important insight**: This pattern (request-scoped resources with automatic cleanup) is similar to what FastAPI uses with dependency injection - you'll see `Depends(get_db)` in Phase 2!"
+
+🛑 **STOP: Wait for student understanding. Explain request-scoped resources, cleanup, and connection pooling if needed.**
+
+- [ ] Student reviewed session management changes
+- [ ] Student understands request-scoped sessions
+- [ ] Student understands resource cleanup pattern
+- [ ] Student sees connection to FastAPI dependency injection
+
 > Your old `models.py` has been renamed to `models.py.backup` just in case.
 
 ---
@@ -393,49 +542,43 @@ If `phase2/DECISIONS-MADE-phase2.md` exists, update the "Shared Models Migration
 
 1. Check if `phase2/backend/models.py` exists
 
-2. If it exists, update `phase2/backend/main.py` (or wherever models are imported):
+2. Update `phase2/backend/database.py` to re-export from shared:
 
 ```python
-# Add to top of main.py (after initial imports):
 import sys
 from pathlib import Path
 
 # Add parent directory to path so we can import from shared/
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# Import from shared instead of local models
-from shared.models import User, Post, Like, Follow
-from shared.database import get_db, Base
+# Import and re-export from shared database
+from shared.database import get_db, Base, SessionLocal, engine, init_db
+
+# Re-export for convenience
+__all__ = ['get_db', 'Base', 'SessionLocal', 'engine', 'init_db']
 ```
 
-3. Remove imports of local models.py
+   This allows other Phase 2 files to import from `database` without needing sys.path manipulation.
 
-4. Update `phase2/backend/database.py` if it exists:
-   - Change it to import and re-export from shared:
-   ```python
-   # phase2/backend/database.py can now just re-export from shared
-   import sys
-   from pathlib import Path
-   sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+3. Update `phase2/backend/main.py`:
+   - Import from shared: `from shared.models import User, Post, Like, Follow`
+   - **DO NOT add** `sys.path.insert()` - already done in `database.py`
 
-   from shared.database import get_db, Base, SessionLocal, engine, init_db
+4. Update `phase2/backend/auth.py` (if it exists):
+   - Import from shared: `from shared.models import User`
+   - **DO NOT add** `sys.path.insert()` - already done in `database.py`
 
-   # Re-export for convenience
-   __all__ = ['get_db', 'Base', 'SessionLocal', 'engine', 'init_db']
-   ```
+5. Verify `phase2/backend/.env` has DATABASE_URL set:
+   - Should already be: `DATABASE_URL=sqlite:///../../shared/database/app.db`
+   - This is the relative path from phase2/backend/ directory to shared database
+   - If not set, add it now
 
-5. Or delete `phase2/backend/database.py` and `phase2/backend/models.py` entirely, importing directly from shared
-
-6. Update `phase2/backend/.env` to point to shared database:
-   ```
-   DATABASE_URL=sqlite:///../../shared/database/app.db
-   ```
-
-7. Backup old files:
+6. Backup old models.py:
    ```bash
    mv phase2/backend/models.py phase2/backend/models.py.backup
-   mv phase2/backend/database.py phase2/backend/database.py.backup
    ```
+
+   Note: We replace `database.py` with the new version (re-exporting from shared), so no backup needed.
 
 **🤖 Claude: Say:**
 

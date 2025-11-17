@@ -346,6 +346,26 @@ uv run python -c "import secrets; print(secrets.token_hex(32))"
 - [ ] If reusing database: verified models match Phase 1 schema
 - [ ] If new database: designed appropriate schema
 
+🤖 **Claude: After creating models, say:**
+
+> "I've created the database models for Phase 2. Before we continue, let's review an important architectural difference from Phase 1.
+>
+> **Compare these two files:**
+> - Phase 1: `phase1/models.py.backup` (or `shared/models.py` if you migrated) - Flask-SQLAlchemy
+> - Phase 2: `phase2/backend/models.py` - Plain SQLAlchemy
+>
+> Can you explain:
+> 1. What's different about how we import Column types? (Hint: look at the import statements at the top)
+> 2. What does `Base` replace from Phase 1? (Phase 1 used `db.Model`)
+> 3. Why do we need `__tablename__ = 'user'` explicitly now?
+>
+> Take a minute to open both files side by side and let me know your thoughts."
+
+🛑 **STOP: Wait for student to review. Answer questions. Confirm understanding of SQLAlchemy differences.**
+
+- [ ] Student reviewed model differences
+- [ ] Student understands Flask-SQLAlchemy vs plain SQLAlchemy
+
 ---
 
 ### Task 3.2: Create Database Connection Module
@@ -441,6 +461,37 @@ uv run python dev_scripts/init_database_phase2.py
 - [ ] auth.py created
 - [ ] Token creation/verification implemented based on Decision 2
 - [ ] `get_current_user()` dependency created for protected routes
+
+🤖 **Claude: After creating auth.py, say:**
+
+> "I've created the authentication module. This is fundamentally different from Phase 1's session-based authentication. Let's review how authentication works in Phase 2.
+>
+> Open `phase2/backend/auth.py` and examine the authentication flow.
+
+**🤖 Claude: Then ask questions based on their choice:**
+
+**For Development Mode:**
+> Can you explain:
+> 1. How does the frontend send the "token" to the backend? (Hint: look for where the Authorization header is checked)
+> 2. What does the `get_current_user()` dependency do when a route uses `Depends(get_current_user)`?
+> 3. Why is this approach NOT suitable for production deployment?
+>
+> Take a look at the code and let me know your thoughts."
+
+**For Production JWT:**
+> Can you explain:
+> 1. What information is encoded inside a JWT token? (Look at the `create_access_token()` function)
+> 2. How is this different from Phase 1's session cookies stored on the server?
+> 3. Why is JWT considered "stateless" authentication?
+> 4. What happens when a token expires?
+>
+> Compare this with Phase 1's session approach - in Phase 1, the server stored session data. Where is the user info stored in JWT-based auth?"
+
+🛑 **STOP: Wait for student to review. Answer questions. Explain JWT vs sessions concept if needed.**
+
+- [ ] Student reviewed authentication code
+- [ ] Student understands token-based auth vs session-based auth
+- [ ] Student understands stateless vs stateful authentication
 
 ---
 
@@ -546,6 +597,28 @@ def get_user_profile(
 - [ ] Pydantic schemas created for request/response
 - [ ] Tested in `/docs` interface
 
+🤖 **Claude: After creating user endpoints, say:**
+
+> "Let's pause here and review the user endpoints we just created. This demonstrates a key architectural difference between Phase 1 and Phase 2.
+>
+> **Compare these two implementations:**
+> - Phase 2: Open `phase2/backend/main.py` and find the `GET /users/{user_id}` endpoint
+> - Phase 1: Open `phase1/routes.py` (or `phase1/app.py`) and find `GET /profile/<username>` route
+>
+> Can you explain:
+> 1. What does Phase 1's route return? (Hint: look for `render_template`)
+> 2. What does Phase 2's endpoint return? (Hint: look at the return statement - is it HTML or something else?)
+> 3. Who is responsible for rendering the HTML in each architecture?
+> 4. What does `Depends(get_db)` do in the Phase 2 endpoint? Why do we need it?
+>
+> Understanding this difference is crucial to understanding REST architecture. Take a minute to compare both files."
+
+🛑 **STOP: Wait for student to review. Discuss server-side rendering vs client-side rendering. Explain dependency injection pattern.**
+
+- [ ] Student compared Phase 1 route vs Phase 2 endpoint
+- [ ] Student understands server-side rendering vs JSON API responses
+- [ ] Student understands FastAPI dependency injection
+
 ---
 
 ### Task 5.3: Implement Post Endpoints
@@ -607,6 +680,32 @@ def create_post(
 - [ ] Request/response Pydantic models created
 - [ ] Create post tested in `/docs`
 - [ ] List posts tested
+
+🤖 **Claude: After creating post endpoints, say:**
+
+> "Great! Now let's review the create post endpoint - it demonstrates FastAPI's Pydantic validation, which is quite different from Phase 1's approach.
+>
+> Open `phase2/backend/main.py` and find the `POST /posts` endpoint.
+>
+> **Notice two things:**
+> 1. The `post_data: PostCreate` parameter
+> 2. The `PostCreate` Pydantic model defined above
+>
+> Now compare with Phase 1's `POST /posts` route (in `phase1/routes.py` or `phase1/app.py`).
+>
+> Can you explain:
+> 1. What happens if the frontend sends invalid JSON (e.g., missing the `content` field)?
+> 2. How does Phase 1 validate the form data? (Hint: look for `request.form.get('content')` and manual checks)
+> 3. What's the benefit of Pydantic's automatic validation?
+> 4. Where does the validation error message come from in Phase 2?
+>
+> Try testing this in the `/docs` interface - submit a POST request with missing or invalid data and see what happens!"
+
+🛑 **STOP: Wait for student to review and test. Discuss automatic validation vs manual validation. Show how FastAPI/docs displays validation errors.**
+
+- [ ] Student compared validation approaches
+- [ ] Student understands Pydantic automatic validation
+- [ ] Student tested validation in `/docs` interface
 
 ---
 
@@ -735,6 +834,26 @@ export const usersAPI = {
 - [ ] Token interceptor set up
 - [ ] API functions created for each backend endpoint
 
+🤖 **Claude: After creating the API client, say:**
+
+> "Let's review the API client configuration - this is a key pattern in modern web applications that centralize how your frontend talks to the backend.
+>
+> Open `phase2/frontend/src/api.js` and look at the axios interceptor section (the `api.interceptors.request.use(...)` part).
+>
+> Can you explain:
+> 1. What does the interceptor do before every API request is sent?
+> 2. Where did the token come from? (Hint: look for `localStorage.getItem('token')`)
+> 3. How is this different from Phase 1's session cookies? (In Phase 1, cookies were sent automatically by the browser)
+> 4. What happens if the token is expired or invalid when it reaches the backend?
+>
+> This pattern centralizes authentication - every API call automatically includes the token, so individual components don't need to worry about it!"
+
+🛑 **STOP: Wait for student understanding. Explain interceptor pattern and token-based auth flow. Discuss localStorage vs cookies.**
+
+- [ ] Student understands axios interceptor pattern
+- [ ] Student understands localStorage for token storage
+- [ ] Student understands Authorization header mechanism
+
 ---
 
 ## Part 7: Frontend Implementation
@@ -784,6 +903,28 @@ export const usersAPI = {
 - [ ] Create post component created
 - [ ] Posts display correctly from API
 - [ ] Can create new posts
+
+🤖 **Claude: After creating post components, say:**
+
+> "Let's review how Phase 2's frontend architecture differs from Phase 1's template-based approach. This is the heart of the SPA (Single Page Application) model.
+>
+> **Compare these two approaches to displaying posts:**
+> - Phase 1: Open `phase1/templates/index.html` (Jinja2 template)
+> - Phase 2: Open `phase2/frontend/src/components/PostList.jsx` (or `.vue`)
+>
+> Can you explain:
+> 1. **Data source**: Where does the post data come from in Phase 1? (Hint: server renders it into the HTML before sending to browser)
+> 2. **Data source**: Where does the post data come from in Phase 2? (Hint: component fetches it via API call)
+> 3. **Create post flow**: What happens when you create a new post in Phase 1? (Does the page refresh?)
+> 4. **Create post flow**: What happens when you create a new post in Phase 2? (Check if the page refreshes or if the component just updates its state)
+>
+> This is the core difference between server-side rendering (SSR) and single-page applications (SPA). In Phase 1, the server does all the work and sends complete HTML. In Phase 2, the browser runs JavaScript that fetches data and updates the page dynamically."
+
+🛑 **STOP: Wait for student to compare. Discuss SSR vs SPA, page refresh vs state updates, user experience differences.**
+
+- [ ] Student compared template rendering vs component rendering
+- [ ] Student understands data fetching patterns (server-rendered vs API calls)
+- [ ] Student understands SPA state updates vs full page reloads
 
 ---
 
@@ -844,6 +985,38 @@ export const usersAPI = {
 ---
 
 ### Task 8.2: Compare with Phase 1
+
+🤖 **Claude: Before documenting the comparison, do a hands-on exercise:**
+
+> "Before we document the architectural comparison, let's do a hands-on exercise to really see the differences in action.
+>
+> **Open two browser windows side by side:**
+> - Window 1: Phase 1 app (http://localhost:5000 or 5001)
+> - Window 2: Phase 2 app (http://localhost:5173)
+>
+> **Now test the same action in both windows:**
+> 1. Create a new post in Phase 1 - watch what happens to the page
+> 2. Open browser DevTools in Phase 2 (right-click → Inspect → Network tab)
+> 3. Create a new post in Phase 2 - watch the Network tab
+> 4. Like a post in Phase 2 (if you implemented likes) - watch the Network tab
+>
+> **Questions to consider:**
+> - In Phase 1: What happened after you created the post? (Did the entire page reload?)
+> - In Phase 2: What network requests did you see in the DevTools? (Look for POST /posts, GET /posts)
+> - In Phase 2: Did the page reload when you liked a post?
+> - Which approach felt faster/more responsive?
+>
+> Let me know what differences you notice in the user experience!"
+
+🛑 **STOP: Wait for student observations. Discuss immediate feedback vs page reloads, network activity visibility, perceived performance.**
+
+- [ ] Student tested both applications side-by-side
+- [ ] Student observed network activity in DevTools
+- [ ] Student noticed UX differences (page reloads vs smooth updates)
+
+---
+
+Now let's document your observations:
 
 **Reflection questions** (add answers to DECISIONS-MADE.md or ARCHITECTURE.md):
 
