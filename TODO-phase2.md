@@ -683,21 +683,70 @@ def create_post(
 
 🤖 **Claude: After creating post endpoints, say:**
 
-> "Great! Now let's review the create post endpoint - it demonstrates FastAPI's Pydantic validation, which is quite different from Phase 1's approach.
+> "I've created the post endpoints. Let's pause here - I'd like you to review the 'create post' endpoint, just like we did in Phase 1.
 >
-> Open `phase2/backend/main.py` and find the `POST /posts` endpoint.
->
-> **Notice two things:**
-> 1. The `post_data: PostCreate` parameter
-> 2. The `PostCreate` Pydantic model defined above
->
-> Now compare with Phase 1's `POST /posts` route (in `phase1/routes.py` or `phase1/app.py`).
+> Open `phase2/backend/main.py` and find the function decorated with `@app.post("/posts", ...)`.
 >
 > Can you explain:
-> 1. What happens if the frontend sends invalid JSON (e.g., missing the `content` field)?
-> 2. How does Phase 1 validate the form data? (Hint: look for `request.form.get('content')` and manual checks)
+> 1. How does it know which user is creating the post? (Compare this to Phase 1's `session['user_id']`)
+> 2. What validation is happening? (Look at the `PostCreate` Pydantic model)
+> 3. What happens after the post is created - what does the endpoint return?
+>
+> Take a minute to read that function and let me know your thoughts."
+
+🛑 **STOP: Wait for student to review. Answer questions.**
+
+🤖 **Claude: After student answers question 1 (about getting current user), ask:**
+
+> "You mentioned `Depends(get_current_user)`. Do you understand what `Depends()` does in FastAPI? It appears in several places in this code."
+
+🛑 **STOP: Wait for response.**
+
+**If student says no or seems uncertain, explain:**
+
+> "`Depends()` is FastAPI's **dependency injection** system - one of the most important FastAPI concepts.
+>
+> ```python
+> def create_post(
+>     post_data: PostCreate,
+>     current_user: User = Depends(get_current_user),
+>     db: Session = Depends(get_db)
+> ):
+> ```
+>
+> **How it works:**
+> 1. Before your function runs, FastAPI calls the function inside `Depends()`
+> 2. The result becomes the parameter value
+> 3. If that function fails (raises an exception), your endpoint never runs
+>
+> **In this example:**
+> - `Depends(get_current_user)` → checks Authorization header, returns User (or raises 401)
+> - `Depends(get_db)` → creates a database session, automatically closes it after
+>
+> **Compare to Phase 1:**
+> - Phase 1: You manually checked `if 'user_id' not in session` in each route
+> - Phase 2: `Depends(get_current_user)` does this automatically
+>
+> Does that make sense?"
+
+**If student already understands Depends, acknowledge and move on.**
+
+- [ ] Student reviewed create post endpoint
+- [ ] Student understands `Depends()` dependency injection
+- [ ] Student understands what the endpoint returns (JSON vs redirect)
+
+---
+
+🤖 **Claude: After confirming Depends understanding, follow up with validation questions:**
+
+> "Good! Now let's look at the validation differences between Phase 1 and Phase 2.
+>
+> Compare with Phase 1's `POST /posts` route (in `phase1/routes.py`).
+>
+> Can you explain:
+> 1. How does Phase 1 validate the form data? (Hint: look for manual `if not content.strip()` checks)
+> 2. What happens in Phase 2 if the frontend sends invalid JSON (e.g., missing the `content` field)?
 > 3. What's the benefit of Pydantic's automatic validation?
-> 4. Where does the validation error message come from in Phase 2?
 >
 > Try testing this in the `/docs` interface - submit a POST request with missing or invalid data and see what happens!"
 
@@ -906,19 +955,40 @@ export const usersAPI = {
 
 🤖 **Claude: After creating post components, say:**
 
-> "Let's review how Phase 2's frontend architecture differs from Phase 1's template-based approach. This is the heart of the SPA (Single Page Application) model.
+> "I've created the post components. Let's review the PostList component, just like we reviewed the homepage template in Phase 1.
 >
-> **Compare these two approaches to displaying posts:**
-> - Phase 1: Open `phase1/templates/index.html` (Jinja2 template)
-> - Phase 2: Open `phase2/frontend/src/components/PostList.jsx` (or `.vue`)
+> Open `phase2/frontend/src/components/PostList.jsx` (or `.vue` for Vue).
 >
 > Can you explain:
-> 1. **Data source**: Where does the post data come from in Phase 1? (Hint: server renders it into the HTML before sending to browser)
-> 2. **Data source**: Where does the post data come from in Phase 2? (Hint: component fetches it via API call)
-> 3. **Create post flow**: What happens when you create a new post in Phase 1? (Does the page refresh?)
-> 4. **Create post flow**: What happens when you create a new post in Phase 2? (Check if the page refreshes or if the component just updates its state)
+> 1. How does it know where to get posts from? (Hint: look for the `useEffect` hook and API call)
+> 2. How does it iterate through posts? (Compare `posts.map()` to Phase 1's `{% for post in posts %}`)
+> 3. What happens while waiting for the API response? (Hint: look for loading state)
 >
-> This is the core difference between server-side rendering (SSR) and single-page applications (SPA). In Phase 1, the server does all the work and sends complete HTML. In Phase 2, the browser runs JavaScript that fetches data and updates the page dynamically."
+> Take a minute to read the component and let me know your thoughts."
+
+🛑 **STOP: Wait for student to review. Answer questions. Confirm understanding.**
+
+- [ ] Student reviewed PostList component
+- [ ] Student understands useEffect for data fetching
+- [ ] Student understands how iteration works (map vs Jinja for loop)
+
+---
+
+🤖 **Claude: After student responds, compare architectures:**
+
+> "Good! Now let's compare the two approaches directly.
+>
+> **Open both files side by side:**
+> - Phase 1: `phase1/templates/index.html` (Jinja2 template)
+> - Phase 2: `phase2/frontend/src/components/PostList.jsx`
+>
+> Can you explain:
+> 1. **Data source**: Where does the post data come from in Phase 1? (server renders it into the HTML)
+> 2. **Data source**: Where does the post data come from in Phase 2? (component fetches via API)
+> 3. **Create post flow**: What happens when you create a new post in Phase 1? (Does the page refresh?)
+> 4. **Create post flow**: What happens when you create a new post in Phase 2? (Does the page refresh, or does the component update?)
+>
+> This is the core difference between server-side rendering (SSR) and single-page applications (SPA)."
 
 🛑 **STOP: Wait for student to compare. Discuss SSR vs SPA, page refresh vs state updates, user experience differences.**
 
