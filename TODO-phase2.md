@@ -203,6 +203,14 @@ This file is designed to guide you through helping a student build a REST API (F
   - Production-ready
   - Can reuse Phase 1's Google OAuth or Email Magic Links for initial login
 
+- [ ] **UMD CAS** (Great for UMD students - 15-20 minutes)
+  - Uses UMD's institutional authentication
+  - No external service setup needed (no Google Cloud, no email service)
+  - Issues JWT after CAS authentication
+  - ⚠️ **Local dev requires special hostname**: Use `localhost.dev.umd.edu` instead of `localhost`
+  - Works on HTTPS servers (PythonAnywhere) in production
+  - See SETUP-AUTHENTICATION.md for detailed setup
+
 ---
 
 ### 🎯 Decision 3: Database Strategy
@@ -448,6 +456,14 @@ uv run python dev_scripts/init_database_phase2.py
 - `get_current_user()` dependency for protected routes
 - `/token` endpoint for login (can reuse Phase 1 auth flow, then issue JWT)
 
+**For UMD CAS:**
+- `get_cas_login_url()` function to generate CAS login redirect
+- `validate_cas_ticket()` function to validate ticket with CAS server
+- `create_access_token()` function to issue JWT after successful CAS auth
+- `get_current_user()` dependency for protected routes
+- **Important**: Use `localhost.dev.umd.edu` instead of `localhost` for local development
+- See SETUP-AUTHENTICATION.md Option 4 for complete implementation
+
 🤖 **Claude: For production JWT, explain the flow:**
 1. User provides credentials (Google OAuth callback, email magic link, or username/password)
 2. Backend verifies credentials
@@ -506,10 +522,21 @@ uv run python dev_scripts/init_database_phase2.py
 - `POST /token` - Accepts credentials, returns JWT token
 - Optionally: `POST /refresh` - Refresh expired tokens
 
+**UMD CAS:**
+- `GET /auth/cas/login` - Redirects to UMD CAS login page
+- `GET /auth/cas/callback` - Handles CAS callback, validates ticket, issues JWT
+- `GET /auth/cas/logout` - Redirects to CAS logout
+
 🤖 **Claude: If student chose to reuse Google OAuth or Email Magic Links from Phase 1, help them create endpoints that:**
 1. Accept the OAuth code or magic link token
 2. Verify it (reuse Phase 1 logic)
 3. Issue a JWT token for the verified user
+
+🤖 **Claude: If student chose UMD CAS:**
+1. Remind them to use `localhost.dev.umd.edu:8000` instead of `localhost:8000`
+2. Help configure the CAS_SERVICE_URL in .env
+3. Guide them through the callback flow (ticket validation → user creation → JWT issuance)
+4. See SETUP-AUTHENTICATION.md Option 4 for complete code examples
 
 - [ ] Login endpoint created
 - [ ] Endpoint tested with FastAPI docs (`/docs`)

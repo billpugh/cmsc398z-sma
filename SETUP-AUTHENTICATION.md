@@ -274,12 +274,14 @@ Choose based on your goals and timeline:
 | **Development Mode** | 5 minutes | Very Low | Learning features first, demo only | Easy to add auth later |
 | **Google OAuth** | 15-20 minutes | Medium | Real app, simplest production auth | Production-ready |
 | **Email Magic Links** | 30-45 minutes | High | Learning email workflows, no Google dependency | Production-ready with email service |
+| **UMD CAS** | 15-20 minutes | Medium | UMD students, institutional auth | Production-ready (Phase 2 only) |
 
 ### Recommendation by Scenario
 
 - **First time building a web app?** → Start with Development Mode, add Google OAuth later
 - **Want to deploy publicly?** → Use Google OAuth
 - **Want to learn email authentication?** → Use Email Magic Links (but expect more complexity)
+- **UMD student wanting institutional auth?** → Use UMD CAS (Phase 2 recommended)
 - **Short on time?** → Development Mode or Google OAuth
 
 ---
@@ -1078,6 +1080,345 @@ def magic_link_login(token):
 - For Gmail: Make sure you're using App Password, not account password
 - For Gmail: Verify 2FA is enabled
 - For SendGrid: Verify API key has Mail Send permissions
+
+---
+
+## Option 4: UMD CAS Authentication (Phase 2 Recommended)
+
+### Why UMD CAS?
+
+✅ **Advantages:**
+- No external service setup (Google Cloud, email service)
+- Users already have UMD credentials
+- Institutional trust and security
+- No password management
+- Fast setup (15-20 minutes)
+
+⚠️ **Considerations:**
+- Only works for UMD users
+- **Requires special hostname for local development** (see below)
+- Best suited for Phase 2 (FastAPI) due to library support
+
+### Important: Local Development Setup
+
+**⚠️ UMD CAS will NOT work with `localhost` directly!**
+
+CAS requires a valid hostname. For local development, use:
+
+```
+http://localhost.dev.umd.edu:8000
+```
+
+This hostname:
+- Resolves to the same IP address as `localhost` (127.0.0.1)
+- Is recognized by UMD CAS as a valid redirect target
+- Works with HTTP (no SSL required for development)
+
+**For production deployment**, CAS works on HTTPS servers like PythonAnywhere:
+```
+https://yourusername.pythonanywhere.com
+```
+
+### Setup Instructions
+
+#### Step 1: Install Dependencies
+
+**Update `pyproject.toml`:**
+
+```toml
+[project]
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.25.0",  # For CAS ticket validation
+]
+```
+
+```bash
+uv sync
+```
+
+#### Step 2: Configure Environment
+
+**Add to `.env`:**
+
+```env
+SECRET_KEY=<your-generated-secret-key>
+CAS_SERVER_URL=https://shib.idm.umd.edu/shibboleth-idp/profile/cas
+CAS_SERVICE_URL=http://localhost.dev.umd.edu:8000/auth/cas/callback
+```
+
+**For production (PythonAnywhere):**
+```env
+CAS_SERVICE_URL=https://yourusername.pythonanywhere.com/auth/cas/callback
+```
+
+#### Step 3: Implement CAS Authentication
+
+**Create `auth.py`:**
+
+```python
+import httpx
+from fastapi import HTTPException
+from jose import jwt
+from datetime import datetime, timedelta
+import os
+import xml.etree.ElementTree as ET
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+CAS_SERVER_URL = os.getenv("CAS_SERVER_URL")
+CAS_SERVICE_URL = os.getenv("CAS_SERVICE_URL")
+
+def get_cas_login_url():
+    """Generate URL to redirect user to CAS login"""
+    return f"{CAS_SERVER_URL}/login?service={CAS_SERVICE_URL}"
+
+def get_cas_logout_url():
+    """Generate URL to log user out of CAS"""
+    return f"{CAS_SERVER_URL}/logout"
+
+async def validate_cas_ticket(ticket: str) -> str:
+    """
+    Validate CAS ticket and return username (Directory ID).
+
+    Returns the UMD Directory ID (e.g., 'jsmith') if valid.
+    Raises HTTPException if invalid.
+    """
+    validate_url = f"{CAS_SERVER_URL}/serviceValidate"
+    params = {
+        "ticket": ticket,
+        "service": CAS_SERVICE_URL
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(validate_url, params=params)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="CAS validation failed")
+
+    # Parse XML response
+    # CAS returns XML like:
+    # <cas:serviceResponse>
+    #   <cas:authenticationSuccess>
+    #     <cas:user>jsmith</cas:user>
+    #   </cas:authenticationSuccess>
+    # </cas:serviceResponse>
+
+    try:
+        root = ET.fromstring(response.text)
+        # Handle CAS namespace
+        ns = {"cas": "http://www.yale.edu/tp/cas"}
+
+        # Check for authentication success
+        success = root.find(".//cas:authenticationSuccess", ns)
+        if success is not None:
+            user_element = success.find("cas:user", ns)
+            if user_element is not None:
+                return user_element.text
+
+        # Check for authentication failure
+        failure = root.find(".//cas:authenticationFailure", ns)
+        if failure is not None:
+            raise HTTPException(
+                status_code=401,
+                detail=f"CAS authentication failed: {failure.text}"
+            )
+
+        raise HTTPException(status_code=401, detail="Invalid CAS response")
+
+    except ET.ParseError:
+        raise HTTPException(status_code=401, detail="Could not parse CAS response")
+
+def create_access_token(data: dict) -> str:
+    """Create JWT token after successful CAS authentication"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+```
+
+#### Step 4: Create CAS Endpoints
+
+**Add to `main.py`:**
+
+```python
+from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse
+from auth import (
+    get_cas_login_url,
+    get_cas_logout_url,
+    validate_cas_ticket,
+    create_access_token,
+    get_current_user
+)
+
+app = FastAPI()
+
+@app.get("/auth/cas/login")
+def cas_login():
+    """Redirect user to UMD CAS login page"""
+    return RedirectResponse(url=get_cas_login_url())
+
+@app.get("/auth/cas/callback")
+async def cas_callback(
+    ticket: str = Query(..., description="CAS ticket from redirect"),
+    db: Session = Depends(get_db)
+):
+    """
+    Handle CAS callback after successful authentication.
+
+    CAS redirects here with a ticket parameter.
+    We validate the ticket and issue a JWT.
+    """
+    # Validate ticket with CAS server
+    directory_id = await validate_cas_ticket(ticket)
+
+    # Check if user is invited (optional - remove if not using invites)
+    email = f"{directory_id}@umd.edu"
+    if not is_invited(email):
+        raise HTTPException(status_code=403, detail="Not on invite list")
+
+    # Find or create user
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(
+            email=email,
+            username=directory_id,
+            display_name=directory_id
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Create JWT token
+    token = create_access_token({"sub": str(user.id)})
+
+    # Redirect to frontend with token
+    # Frontend should extract token from URL and store it
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    return RedirectResponse(url=f"{frontend_url}/auth/callback?token={token}")
+
+@app.get("/auth/cas/logout")
+def cas_logout():
+    """Redirect user to CAS logout"""
+    return RedirectResponse(url=get_cas_logout_url())
+```
+
+#### Step 5: Frontend Integration
+
+**Handle the callback in your frontend** (`src/AuthCallback.jsx` for React):
+
+```javascript
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+function AuthCallback() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      // Store token
+      localStorage.setItem('token', token);
+      // Redirect to home
+      navigate('/');
+    } else {
+      // No token, redirect to login
+      navigate('/login');
+    }
+  }, [searchParams, navigate]);
+
+  return <div>Logging in...</div>;
+}
+
+export default AuthCallback;
+```
+
+**Login button component:**
+
+```javascript
+function LoginButton() {
+  const handleLogin = () => {
+    // Redirect to backend CAS login endpoint
+    window.location.href = 'http://localhost.dev.umd.edu:8000/auth/cas/login';
+  };
+
+  return (
+    <button onClick={handleLogin}>
+      Login with UMD CAS
+    </button>
+  );
+}
+```
+
+#### Step 6: Run with Correct Hostname
+
+**Start the backend with the correct host:**
+
+```bash
+# Development - use localhost.dev.umd.edu
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Access your app at:**
+```
+http://localhost.dev.umd.edu:8000
+```
+
+**NOT at `http://localhost:8000`** - CAS will reject that!
+
+### Testing the Flow
+
+1. **Start backend**: `uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000`
+2. **Start frontend**: `npm run dev`
+3. **Visit**: `http://localhost:5173` (or your frontend URL)
+4. **Click "Login with UMD CAS"**
+5. **You'll be redirected to UMD's login page**
+6. **Enter your UMD credentials**
+7. **CAS redirects back to your app with a ticket**
+8. **Your app validates the ticket and issues a JWT**
+9. **Frontend stores the JWT and you're logged in!**
+
+### Common Issues
+
+**"Service not allowed" or "Invalid service" error:**
+- Make sure you're using `localhost.dev.umd.edu`, not `localhost`
+- Verify `CAS_SERVICE_URL` matches your actual callback URL exactly
+
+**"Ticket validation failed":**
+- Tickets can only be used once and expire quickly
+- Don't refresh the callback page
+- Check that `CAS_SERVER_URL` is correct
+
+**CORS errors:**
+- The CAS login is a redirect, not an AJAX call, so CORS doesn't apply to that
+- Make sure your frontend URL is in CORS_ORIGINS for API calls
+
+### Production Deployment
+
+For PythonAnywhere or other HTTPS hosts:
+
+1. **Update `.env`:**
+   ```env
+   CAS_SERVICE_URL=https://yourusername.pythonanywhere.com/auth/cas/callback
+   FRONTEND_URL=https://yourusername.pythonanywhere.com
+   ```
+
+2. **Update CORS_ORIGINS** to include your production domain
+
+3. **Update frontend** to use production backend URL
+
+### Reference
+
+- [UMD CAS Documentation](https://umd.service-now.com/kb_view.do?sys_kb_id=d946fabc1b06fd50df8784415b4bcbef&sysparm_class_name=kb_knowledge)
+- [CAS Protocol Specification](https://apereo.github.io/cas/6.6.x/protocol/CAS-Protocol-Specification.html)
 
 ---
 
